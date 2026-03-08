@@ -4,6 +4,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+from app.routers import auth
+
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(title="MedLock API", version="1.0.0")
@@ -18,6 +20,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth.router)
 
 
 @app.get("/health")
