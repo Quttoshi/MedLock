@@ -1,4 +1,5 @@
 .env
+MedLock/
 __pycache__/
 *.pyc
 *.pyo
