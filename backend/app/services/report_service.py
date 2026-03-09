@@ -8,6 +8,7 @@ from app.models.patient import Patient
 from app.models.user import User
 from app.services.encryption_service import encrypt_file, sha256_hash, decrypt_file
 from app.services.storage_service import upload_file, delete_file
+from app.services.notification_service import create_notification
 from app.services.ocr_service import run_ocr
 
 ALLOWED_CONTENT_TYPES = {"application/pdf", "image/jpeg", "image/png"}
@@ -64,6 +65,17 @@ def upload_report(file: UploadFile, report_type: str, current_user: User, db: Se
     # Run OCR on the original (unencrypted) file bytes
     try:
         run_ocr(report, file_bytes, db)
+    except Exception:
+        pass
+
+    # Notify patient of successful upload
+    try:
+        create_notification(
+            db,
+            recipient_id=current_user.id,
+            notification_type="report_uploaded",
+            message=f"Your report '{file.filename}' has been uploaded and encrypted successfully.",
+        )
     except Exception:
         pass
 
