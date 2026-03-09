@@ -17,16 +17,16 @@ class Settings(BaseSettings):
     # Encryption
     AES_SECRET_KEY: str
 
-    # Ethereum Sepolia
-    WEB3_PROVIDER_URL: str
-    ETHEREUM_PRIVATE_KEY: str
-    ETHEREUM_CONTRACT_ADDRESS: str
+    # Ethereum Sepolia (optional until Phase 6)
+    WEB3_PROVIDER_URL: str = ""
+    ETHEREUM_PRIVATE_KEY: str = ""
+    ETHEREUM_CONTRACT_ADDRESS: str = ""
 
-    # Email
-    MAIL_USERNAME: str
-    MAIL_PASSWORD: str
-    MAIL_FROM: str
-    MAIL_SERVER: str
+    # Email (optional until email verification phase)
+    MAIL_USERNAME: str = ""
+    MAIL_PASSWORD: str = ""
+    MAIL_FROM: str = ""
+    MAIL_SERVER: str = ""
     MAIL_PORT: int = 587
 
     class Config:
