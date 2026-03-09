@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from app.models.medical_report import MedicalReport
 from app.models.patient import Patient
 from app.models.user import User
-from app.services.encryption_service import encrypt_file, sha256_hash
+from app.services.encryption_service import encrypt_file, sha256_hash, decrypt_file
 from app.services.storage_service import upload_file, delete_file
+from app.services.ocr_service import run_ocr
 
 ALLOWED_CONTENT_TYPES = {"application/pdf", "image/jpeg", "image/png"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -27,6 +28,14 @@ def upload_report(file: UploadFile, report_type: str, current_user: User, db: Se
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
 
     file_hash = sha256_hash(file_bytes)
+
+    duplicate = db.query(MedicalReport).filter(
+        MedicalReport.patient_id == patient.id,
+        MedicalReport.file_hash_sha256 == file_hash,
+    ).first()
+    if duplicate:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This file has already been uploaded")
+
     encrypted_bytes, key_ref = encrypt_file(file_bytes)
 
     report_id = uuid.uuid4()
@@ -51,6 +60,12 @@ def upload_report(file: UploadFile, report_type: str, current_user: User, db: Se
     db.add(report)
     db.commit()
     db.refresh(report)
+
+    # Run OCR on the original (unencrypted) file bytes
+    try:
+        run_ocr(report, file_bytes, db)
+    except Exception:
+        pass
 
     return report
 
