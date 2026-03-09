@@ -12,7 +12,7 @@ from app.schemas.auth import PatientRegisterRequest, LoginRequest
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Track failed login attempts: { email: { count: int, lockout_until: datetime | None } }
+# Track failed login attempts
 _failed_attempts: dict = {}
 MAX_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
