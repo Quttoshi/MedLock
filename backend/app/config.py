@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     ETHEREUM_PRIVATE_KEY: str = ""
     ETHEREUM_CONTRACT_ADDRESS: str = ""
 
+    # OCR (Windows only — empty on Linux)
+    TESSERACT_CMD: str = "tesseract"
+    POPPLER_PATH: str = ""
+
     # Email (optional until email verification phase)
     MAIL_USERNAME: str = ""
     MAIL_PASSWORD: str = ""
