@@ -1,15 +1,21 @@
+import uuid
 from typing import List
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies.jwt import get_current_user
 from app.dependencies.rbac import require_role
+from app.models.medical_report import MedicalReport
+from app.models.ocr_result import OcrResult
+from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.report import ReportResponse
 from app.services.audit_service import log_action
+from app.services.encryption_service import decrypt_file
 from app.services.report_service import get_my_reports, upload_report
+from app.services.storage_service import get_supabase, BUCKET_NAME
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -41,3 +47,88 @@ def my_reports(
     db: Session = Depends(get_db),
 ):
     return get_my_reports(current_user, db)
+
+
+@router.get("/{report_id}", response_model=ReportResponse)
+def get_report(
+    report_id: str,
+    current_user: User = Depends(require_role(["patient"])),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
+    report = db.query(MedicalReport).filter(
+        MedicalReport.id == uuid.UUID(report_id),
+        MedicalReport.patient_id == patient.id,
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    return report
+
+
+@router.get("/{report_id}/download")
+def download_report(
+    report_id: str,
+    current_user: User = Depends(require_role(["patient"])),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
+    report = db.query(MedicalReport).filter(
+        MedicalReport.id == uuid.UUID(report_id),
+        MedicalReport.patient_id == patient.id,
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+
+    # Download encrypted bytes from Supabase Storage
+    client = get_supabase()
+    encrypted_bytes = client.storage.from_(BUCKET_NAME).download(report.file_url)
+
+    # Decrypt back to original file
+    original_bytes = decrypt_file(encrypted_bytes, report.encryption_key_ref)
+
+    # Determine content type from filename
+    filename = report.original_filename
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    content_type_map = {
+        "pdf": "application/pdf",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+    }
+    content_type = content_type_map.get(ext, "application/octet-stream")
+
+    return Response(
+        content=original_bytes,
+        media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{report_id}/ocr")
+def get_report_ocr(
+    report_id: str,
+    current_user: User = Depends(require_role(["patient"])),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
+    report = db.query(MedicalReport).filter(
+        MedicalReport.id == uuid.UUID(report_id),
+        MedicalReport.patient_id == patient.id,
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    ocr = db.query(OcrResult).filter(OcrResult.report_id == report.id).first()
+    if not ocr:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OCR data not available for this report")
+    return {
+        "extracted_text": ocr.extracted_text,
+        "structured_data": ocr.structured_data,
+        "abnormal_values": ocr.abnormal_values,
+        "processed_at": ocr.processed_at,
+    }

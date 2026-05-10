@@ -25,6 +25,19 @@ def my_notifications(
     )
 
 
+@router.patch("/my/read-all")
+def mark_all_read(
+    current_user: User = Depends(require_role(["patient", "doctor", "medical_center", "admin"])),
+    db: Session = Depends(get_db),
+):
+    db.query(Notification).filter(
+        Notification.recipient_id == current_user.id,
+        Notification.is_read == False,
+    ).update({"is_read": True})
+    db.commit()
+    return {"message": "All notifications marked as read"}
+
+
 @router.patch("/my/{notification_id}/read")
 def mark_read(
     notification_id: str,

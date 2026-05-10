@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     TESSERACT_CMD: str = "tesseract"
     POPPLER_PATH: str = ""
 
+    # Admin registration secret
+    ADMIN_SECRET: str = "change-me-in-production"
+
     # Email (optional until email verification phase)
     MAIL_USERNAME: str = ""
     MAIL_PASSWORD: str = ""
