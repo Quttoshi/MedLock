@@ -35,13 +35,13 @@ function UploadReport() {
       "image/png",
       "image/tiff",
     ];
-    const maxSize = 50 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024;
 
     if (!allowedTypes.includes(selectedFile.type)) {
       return "Only PDF, JPEG, PNG, and TIFF files are allowed.";
     }
     if (selectedFile.size > maxSize) {
-      return "File size must be under 50MB.";
+      return "File size must be under 10MB.";
     }
     return null;
   };
@@ -273,7 +273,7 @@ function UploadReport() {
                     <span className="text-blue-600">browse</span>
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    PDF, JPEG, PNG, TIFF — max 50MB
+                    PDF, JPEG, PNG, TIFF — max 10MB
                   </p>
                 </>
               )}

@@ -2,64 +2,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 
-// ── Mock Data ────────────────────────────────────────
-const MOCK_REQUESTS = [
-  {
-    id: "1",
-    doctor_name: "Dr. Ahmed Raza",
-    doctor_specialization: "Cardiologist",
-    report_name: "Blood_Test_March2026.pdf",
-    report_type: "Blood Test",
-    reason: "Required for cardiac risk assessment and treatment planning.",
-    requested_at: "2026-03-10T09:30:00Z",
-    status: "pending",
-  },
-  {
-    id: "2",
-    doctor_name: "Dr. Sara Khan",
-    doctor_specialization: "Neurologist",
-    report_name: "MRI_Brain_Jan2026.pdf",
-    report_type: "MRI Scan",
-    reason: "Follow-up review of brain MRI for ongoing treatment.",
-    requested_at: "2026-03-08T14:15:00Z",
-    status: "pending",
-  },
-  {
-    id: "3",
-    doctor_name: "Dr. Usman Ali",
-    doctor_specialization: "General Physician",
-    report_name: "Chest_XRay_Feb2026.jpg",
-    report_type: "X-Ray",
-    reason: "Routine checkup review.",
-    requested_at: "2026-02-20T11:00:00Z",
-    status: "approved",
-    decided_at: "2026-02-20T15:30:00Z",
-    expires_at: "2026-03-20T15:30:00Z",
-  },
-  {
-    id: "4",
-    doctor_name: "Dr. Fatima Malik",
-    doctor_specialization: "Radiologist",
-    report_name: "Blood_Test_March2026.pdf",
-    report_type: "Blood Test",
-    reason: "Second opinion requested by patient.",
-    requested_at: "2026-02-10T10:00:00Z",
-    status: "denied",
-    decided_at: "2026-02-11T09:00:00Z",
-  },
-  {
-    id: "5",
-    doctor_name: "Dr. Bilal Hassan",
-    doctor_specialization: "Orthopedic Surgeon",
-    report_name: "MRI_Brain_Jan2026.pdf",
-    report_type: "MRI Scan",
-    reason: "Pre-surgery assessment.",
-    requested_at: "2026-01-15T08:00:00Z",
-    status: "revoked",
-    decided_at: "2026-01-16T10:00:00Z",
-  },
-];
-
 // ── Status Badge ─────────────────────────────────────
 function StatusBadge({ status }) {
   const config = {
@@ -250,8 +192,7 @@ function AccessRequests() {
       });
       setRequests(res.data);
     } catch {
-      // backend not ready — use mock data
-      setRequests(MOCK_REQUESTS);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -267,19 +208,13 @@ function AccessRequests() {
   const handleApprove = async (id) => {
     setActionLoading(id);
     try {
-      await api.patch(`/access-requests/${id}/approve`, {}, {
+      const res = await api.patch(`/access-requests/${id}/approve`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setRequests((prev) =>
-        prev.map((r) => r.id === id ? { ...r, status: "approved", decided_at: new Date().toISOString() } : r)
-      );
-      showToast("Access approved and recorded on blockchain.");
+      setRequests((prev) => prev.map((r) => r.id === id ? res.data : r));
+      showToast("Access approved successfully.");
     } catch {
-      // mock success for testing
-      setRequests((prev) =>
-        prev.map((r) => r.id === id ? { ...r, status: "approved", decided_at: new Date().toISOString() } : r)
-      );
-      showToast("Access approved and recorded on blockchain.");
+      showToast("Failed to approve request.", "error");
     } finally {
       setActionLoading(null);
     }
@@ -289,19 +224,13 @@ function AccessRequests() {
   const handleDeny = async (id) => {
     setActionLoading(id);
     try {
-      await api.patch(`/access-requests/${id}/deny`, {}, {
+      const res = await api.patch(`/access-requests/${id}/deny`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setRequests((prev) =>
-        prev.map((r) => r.id === id ? { ...r, status: "denied", decided_at: new Date().toISOString() } : r)
-      );
-      showToast("Access denied and recorded on blockchain.", "error");
-    } catch {
-      // mock success for testing
-      setRequests((prev) =>
-        prev.map((r) => r.id === id ? { ...r, status: "denied", decided_at: new Date().toISOString() } : r)
-      );
+      setRequests((prev) => prev.map((r) => r.id === id ? res.data : r));
       showToast("Access denied.", "error");
+    } catch {
+      showToast("Failed to deny request.", "error");
     } finally {
       setActionLoading(null);
     }
@@ -311,19 +240,13 @@ function AccessRequests() {
   const handleRevoke = async (id) => {
     setActionLoading(id);
     try {
-      await api.patch(`/access-requests/${id}/revoke`, {}, {
+      const res = await api.patch(`/access-requests/${id}/revoke`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setRequests((prev) =>
-        prev.map((r) => r.id === id ? { ...r, status: "revoked" } : r)
-      );
+      setRequests((prev) => prev.map((r) => r.id === id ? res.data : r));
       showToast("Access revoked successfully.", "error");
     } catch {
-      // mock success for testing
-      setRequests((prev) =>
-        prev.map((r) => r.id === id ? { ...r, status: "revoked" } : r)
-      );
-      showToast("Access revoked.", "error");
+      showToast("Failed to revoke access.", "error");
     } finally {
       setActionLoading(null);
     }

@@ -12,7 +12,7 @@ export function NotificationProvider({ children }) {
   const fetchNotifications = async () => {
     if (!token) return;
     try {
-      const res = await api.get("/notifications", {
+      const res = await api.get("/notifications/my", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications(res.data);
@@ -26,7 +26,7 @@ export function NotificationProvider({ children }) {
 
   const markAsRead = async (id) => {
     try {
-      await api.patch(`/notifications/${id}/read`, {}, {
+      await api.patch(`/notifications/my/${id}/read`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications((prev) =>
@@ -40,7 +40,7 @@ export function NotificationProvider({ children }) {
 
   const markAllAsRead = async () => {
     try {
-      await api.patch("/notifications/read-all", {}, {
+      await api.patch("/notifications/my/read-all", {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));

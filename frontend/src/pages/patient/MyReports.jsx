@@ -23,36 +23,6 @@ function VerificationBadge({ status }) {
   );
 }
 
-// ── Sample data (used until backend is ready) ────────
-const SAMPLE_REPORTS = [
-  {
-    id: 1,
-    name: "Blood_Test_Jan2025.pdf",
-    report_type: "Blood Test",
-    upload_date: "2025-01-15T10:30:00Z",
-    verification_status: "verified",
-    tx_hash: "0xabc123def456abc123def456abc123def456abc123def456abc123def456abc1",
-    ocr_summary: "Hemoglobin: 13.5 g/dL, WBC: 7.2 K/uL, Platelets: 210 K/uL",
-  },
-  {
-    id: 2,
-    name: "Chest_Xray_Feb2025.png",
-    report_type: "X-Ray",
-    upload_date: "2025-02-20T14:00:00Z",
-    verification_status: "pending",
-    tx_hash: "0xdef789abc123def789abc123def789abc123def789abc123def789abc123def7",
-    ocr_summary: "No significant abnormalities detected in lung fields.",
-  },
-  {
-    id: 3,
-    name: "MRI_Scan_Mar2025.pdf",
-    report_type: "MRI Scan",
-    upload_date: "2025-03-05T09:15:00Z",
-    verification_status: "tampered",
-    tx_hash: "0x111222333444555666777888999aaabbbcccdddeeefffaaabbbcccdddeee111",
-    ocr_summary: "Mild disc bulge at L4-L5. No cord compression noted.",
-  },
-];
 
 function MyReports() {
   const { token } = useAuth();
@@ -67,13 +37,12 @@ function MyReports() {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const res = await api.get("/reports", {
+        const res = await api.get("/reports/my", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setReports(res.data);
       } catch {
-        // Backend not ready yet — use sample data
-        setReports(SAMPLE_REPORTS);
+        setReports([]);
       } finally {
         setLoading(false);
       }
@@ -85,8 +54,9 @@ function MyReports() {
   const reportTypes = ["All", ...new Set(reports.map((r) => r.report_type))];
 
   const filtered = reports.filter((r) => {
+    const name = r.original_filename || r.name || "";
     const matchesSearch =
-      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.report_type.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = filterType === "All" || r.report_type === filterType;
     return matchesSearch && matchesType;
@@ -230,30 +200,20 @@ function MyReports() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 
                                   truncate">
-                      {report.name}
+                      {report.original_filename || report.name}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {report.report_type} · {formatDate(report.upload_date)}
+                      {report.report_type} · {formatDate(report.uploaded_at || report.upload_date)}
                     </p>
 
-                    {/* OCR Summary */}
-                    {report.ocr_summary && (
-                      <p className="text-xs text-gray-500 mt-2 line-clamp-1 
-                                    bg-gray-50 rounded-lg px-3 py-1.5">
-                        {report.ocr_summary}
-                      </p>
-                    )}
-
-                    {/* TX Hash */}
-                    <p className="text-xs font-mono text-gray-400 mt-2">
-                      TX: {truncateHash(report.tx_hash)}
+                    <p className="text-xs font-mono text-gray-300 mt-1.5">
+                      SHA-256: {report.file_hash_sha256?.slice(0, 16)}…
                     </p>
                   </div>
                 </div>
 
-                {/* Badge + Arrow */}
+                {/* Arrow */}
                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <VerificationBadge status={report.verification_status} />
                   <svg className="w-4 h-4 text-gray-300" fill="none"
                     stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round"
