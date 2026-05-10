@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -15,6 +16,8 @@ function LoginPage() {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const registered = location.state?.registered;
 
   // ── Validation ──────────────────────────────────────
   const validate = () => {
@@ -49,8 +52,8 @@ function LoginPage() {
     setLoading(true);
     try {
       const response = await api.post("/auth/login", formData);
-      const { token, user } = response.data;
-      login(user, token);
+      const { access_token, user } = response.data;
+      login(user, access_token);
 
       // Redirect based on role
       if (user.role === "patient") navigate("/patient/dashboard");
@@ -90,6 +93,14 @@ function LoginPage() {
             Sign in to your account
           </p>
         </div>
+
+        {/* Registration Success Banner */}
+        {registered && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200
+                          rounded-lg text-green-700 text-sm">
+            Account created successfully. Please sign in.
+          </div>
+        )}
 
         {/* Server Error Banner */}
         {serverError && (
@@ -183,24 +194,6 @@ function LoginPage() {
           </Link>
         </p>
       </div>
-      {/* Dev Test Button */}
-{import.meta.env.DEV && (
-  <button
-    onClick={() => {
-      login(
-        { name: "Shehbaz Karim", role: "patient",
-          email: "shehbaz@example.com" },
-        "test-token"
-      );
-      navigate("/patient/dashboard");
-    }}
-    className="w-full mt-3 border-2 border-dashed border-gray-300 
-               text-gray-400 hover:border-blue-400 hover:text-blue-500 
-               font-medium py-2.5 rounded-lg transition text-sm"
-  >
-    🧪 Dev: Skip Login → Patient Dashboard
-  </button>
-)}
     </div>
   );
 }
