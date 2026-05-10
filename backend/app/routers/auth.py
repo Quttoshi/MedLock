@@ -6,12 +6,21 @@ from app.dependencies.jwt import get_current_user
 from app.models.user import User
 from app.schemas.auth import (
     PatientRegisterRequest,
+    DoctorRegisterRequest,
+    MedicalCenterRegisterRequest,
+    AdminRegisterRequest,
     LoginRequest,
     LoginResponse,
     MessageResponse,
     UserResponse,
 )
-from app.services.auth_service import register_patient, login_user
+from app.services.auth_service import (
+    register_patient,
+    register_doctor,
+    register_medical_center,
+    register_admin,
+    login_user,
+)
 from app.services.audit_service import log_action
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -20,6 +29,27 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 @router.post("/register", response_model=UserResponse, status_code=201)
 def register(data: PatientRegisterRequest, request: Request, db: Session = Depends(get_db)):
     user = register_patient(data, db)
+    log_action(db, action="register", performed_by=user.id, entity_type="user", entity_id=user.id, request=request)
+    return user
+
+
+@router.post("/register/doctor", response_model=UserResponse, status_code=201)
+def register_doctor_route(data: DoctorRegisterRequest, request: Request, db: Session = Depends(get_db)):
+    user = register_doctor(data, db)
+    log_action(db, action="register", performed_by=user.id, entity_type="user", entity_id=user.id, request=request)
+    return user
+
+
+@router.post("/register/medical-center", response_model=UserResponse, status_code=201)
+def register_medical_center_route(data: MedicalCenterRegisterRequest, request: Request, db: Session = Depends(get_db)):
+    user = register_medical_center(data, db)
+    log_action(db, action="register", performed_by=user.id, entity_type="user", entity_id=user.id, request=request)
+    return user
+
+
+@router.post("/register/admin", response_model=UserResponse, status_code=201)
+def register_admin_route(data: AdminRegisterRequest, request: Request, db: Session = Depends(get_db)):
+    user = register_admin(data, db)
     log_action(db, action="register", performed_by=user.id, entity_type="user", entity_id=user.id, request=request)
     return user
 
