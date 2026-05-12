@@ -16,6 +16,8 @@ from app.services.audit_service import log_action
 from app.services.encryption_service import decrypt_file
 from app.services.report_service import get_my_reports, upload_report
 from app.services.storage_service import get_supabase, BUCKET_NAME
+from app.services.blockchain_service import confirm_log
+from app.models.blockchain_log import BlockchainLog
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -132,3 +134,70 @@ def get_report_ocr(
         "abnormal_values": ocr.abnormal_values,
         "processed_at": ocr.processed_at,
     }
+
+
+@router.get("/{report_id}/blockchain")
+def get_blockchain_logs(
+    report_id: str,
+    current_user: User = Depends(require_role(["patient"])),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
+    report = db.query(MedicalReport).filter(
+        MedicalReport.id == uuid.UUID(report_id),
+        MedicalReport.patient_id == patient.id,
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    logs = db.query(BlockchainLog).filter(BlockchainLog.report_id == report.id).order_by(BlockchainLog.created_at).all()
+    return [
+        {
+            "id": str(log.id),
+            "event_type": log.event_type,
+            "file_hash": log.file_hash,
+            "transaction_hash": log.transaction_hash,
+            "block_number": log.block_number,
+            "network": log.network,
+            "status": log.status,
+            "created_at": log.created_at,
+        }
+        for log in logs
+    ]
+
+
+@router.post("/{report_id}/blockchain/confirm")
+def confirm_blockchain_logs(
+    report_id: str,
+    current_user: User = Depends(require_role(["patient"])),
+    db: Session = Depends(get_db),
+):
+    """Confirm all pending blockchain transactions for a report."""
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
+    report = db.query(MedicalReport).filter(
+        MedicalReport.id == uuid.UUID(report_id),
+        MedicalReport.patient_id == patient.id,
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    pending = db.query(BlockchainLog).filter(
+        BlockchainLog.report_id == report.id,
+        BlockchainLog.status == "pending",
+    ).all()
+    results = []
+    for log in pending:
+        updated = confirm_log(log.id, db)
+        if updated:
+            results.append({
+                "id": str(updated.id),
+                "event_type": updated.event_type,
+                "status": updated.status,
+                "block_number": updated.block_number,
+                "transaction_hash": updated.transaction_hash,
+            })
+    return results
+
+
