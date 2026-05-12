@@ -10,6 +10,7 @@ from app.services.encryption_service import encrypt_file, sha256_hash, decrypt_f
 from app.services.storage_service import upload_file, delete_file
 from app.services.notification_service import create_notification
 from app.services.ocr_service import run_ocr
+from app.services.blockchain_service import log_event as blockchain_log
 
 ALLOWED_CONTENT_TYPES = {"application/pdf", "image/jpeg", "image/png"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -61,6 +62,12 @@ def upload_report(file: UploadFile, report_type: str, current_user: User, db: Se
     db.add(report)
     db.commit()
     db.refresh(report)
+
+    # Log upload event to blockchain (fire-and-forget, never blocks upload)
+    try:
+        blockchain_log(report.id, report.file_hash_sha256, "upload", db)
+    except Exception:
+        pass
 
     # Run OCR on the original (unencrypted) file bytes
     try:
