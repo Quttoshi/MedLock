@@ -11,6 +11,7 @@ from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.access_request import AccessRequestCreate, AccessRequestResponse
 from app.services.notification_service import create_notification
+from app.services.blockchain_service import log_event as blockchain_log
 
 ACCESS_EXPIRY_DAYS = 30
 
@@ -106,6 +107,11 @@ def approve_request(request_id: str, current_user: User, db: Session) -> AccessR
     db.refresh(req)
 
     try:
+        blockchain_log(req.report_id, req.medical_report.file_hash_sha256, "access_grant", db)
+    except Exception:
+        pass
+
+    try:
         create_notification(
             db,
             recipient_id=req.doctor.user_id,
@@ -130,6 +136,11 @@ def deny_request(request_id: str, current_user: User, db: Session) -> AccessRequ
     db.refresh(req)
 
     try:
+        blockchain_log(req.report_id, req.medical_report.file_hash_sha256, "access_deny", db)
+    except Exception:
+        pass
+
+    try:
         create_notification(
             db,
             recipient_id=req.doctor.user_id,
@@ -152,6 +163,11 @@ def revoke_request(request_id: str, current_user: User, db: Session) -> AccessRe
     req.decided_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(req)
+
+    try:
+        blockchain_log(req.report_id, req.medical_report.file_hash_sha256, "revoke", db)
+    except Exception:
+        pass
 
     try:
         create_notification(
