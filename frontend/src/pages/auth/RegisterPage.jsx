@@ -45,6 +45,11 @@ function RegisterPage() {
     specialization: "",
     license_number: "",
     address: "",
+    date_of_birth: "",
+    blood_group: "",
+    gender: "",
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -98,6 +103,13 @@ function RegisterPage() {
     }
 
     const payload = { name: formData.name, email: formData.email, password: formData.password };
+    if (role === "patient") {
+      if (formData.date_of_birth) payload.date_of_birth = formData.date_of_birth;
+      if (formData.blood_group) payload.blood_group = formData.blood_group;
+      if (formData.gender) payload.gender = formData.gender;
+      if (formData.emergency_contact_name) payload.emergency_contact_name = formData.emergency_contact_name;
+      if (formData.emergency_contact_phone) payload.emergency_contact_phone = formData.emergency_contact_phone;
+    }
     if (role === "doctor") {
       payload.specialization = formData.specialization;
       payload.license_number = formData.license_number;
@@ -158,6 +170,73 @@ function RegisterPage() {
             error={errors.name}
           />
           <Field label="Email Address" name="email" type="email" placeholder="you@example.com" value={formData.email} onChange={handleChange} error={errors.email} />
+
+          {/* Patient extra fields */}
+          {role === "patient" && (
+            <>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input
+                  type="date"
+                  name="date_of_birth"
+                  value={formData.date_of_birth}
+                  onChange={handleChange}
+                  max={new Date().toISOString().split("T")[0]}
+                  className="w-full px-4 py-2.5 border border-gray-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gender <span className="text-gray-400 font-normal">(optional)</span></label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-700"
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Blood Group <span className="text-gray-400 font-normal">(optional)</span></label>
+                <select
+                  name="blood_group"
+                  value={formData.blood_group}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-700"
+                >
+                  <option value="">Select blood group</option>
+                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-1">
+                <p className="text-sm font-medium text-gray-700 mb-2">Emergency Contact <span className="text-gray-400 font-normal">(optional)</span></p>
+                <Field
+                  label="Contact Name"
+                  name="emergency_contact_name"
+                  placeholder="e.g. Ahmed Ali"
+                  value={formData.emergency_contact_name}
+                  onChange={handleChange}
+                  error={errors.emergency_contact_name}
+                />
+                <Field
+                  label="Contact Phone"
+                  name="emergency_contact_phone"
+                  placeholder="e.g. +92 300 1234567"
+                  value={formData.emergency_contact_phone}
+                  onChange={handleChange}
+                  error={errors.emergency_contact_phone}
+                />
+              </div>
+            </>
+          )}
 
           {/* Doctor extra fields */}
           {role === "doctor" && (
