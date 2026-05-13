@@ -91,11 +91,13 @@ function DoctorDashboardHome() {
       path: "/doctor/access-requests",
       color: "bg-indigo-600 hover:bg-indigo-700",
     },
+  ];
+
+  const comingSoon = [
     {
-      label: "Query History",
-      description: "Ask AI questions about patient history",
-      path: "/doctor/query",
-      color: "bg-violet-600 hover:bg-violet-700",
+      label: "Patient History",
+      description: "Visual analytics of a patient's entire medical history — trends, abnormal values over time, and risk indicators.",
+      note: "Coming in Iteration 7",
     },
   ];
 
@@ -139,6 +141,35 @@ function DoctorDashboardHome() {
               <p className="font-semibold text-base">{action.label}</p>
               <p className="text-sm opacity-80 mt-1">{action.description}</p>
             </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Coming Soon */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">Coming Soon</h2>
+        <div className="grid grid-cols-1 gap-4">
+          {comingSoon.map((item) => (
+            <div
+              key={item.label}
+              className="bg-gray-50 border border-dashed border-gray-300 rounded-2xl p-5 flex items-start gap-4"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gray-200 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-600">{item.label}</p>
+                  <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">
+                    {item.note}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-400 mt-0.5">{item.description}</p>
+              </div>
+            </div>
           ))}
         </div>
       </div>

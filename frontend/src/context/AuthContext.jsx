@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react";
+import api from "../api/axios";
 
 const AuthContext = createContext(null);
 
@@ -16,7 +17,10 @@ export function AuthProvider({ children }) {
     sessionStorage.setItem("user", JSON.stringify(userData));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {}
     setUser(null);
     setToken(null);
     sessionStorage.removeItem("token");

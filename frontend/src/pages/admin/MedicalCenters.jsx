@@ -13,9 +13,14 @@ function MedicalCenters() {
 
   const fetchMCs = () => {
     setLoading(true);
-    const approved = filter === "approved" ? true : filter === "pending" ? false : "";
+    const approved = filter === "approved" ? true : filter === "pending" || filter === "rejected" ? false : "";
     getAdminMedicalCenters(token, approved)
-      .then((res) => setMcs(res.data))
+      .then((res) => {
+        let data = res.data;
+        if (filter === "pending") data = data.filter((mc) => !mc.rejection_reason);
+        if (filter === "rejected") data = data.filter((mc) => mc.rejection_reason);
+        setMcs(data);
+      })
       .catch(() => setMcs([]))
       .finally(() => setLoading(false));
   };
@@ -52,7 +57,7 @@ function MedicalCenters() {
 
       {/* Filter */}
       <div className="flex gap-2 mb-6">
-        {["all", "pending", "approved"].map((f) => (
+        {["all", "pending", "approved", "rejected"].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -94,9 +99,11 @@ function MedicalCenters() {
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
                       ${mc.is_approved
                         ? "bg-green-100 text-green-700"
+                        : mc.rejection_reason
+                        ? "bg-red-100 text-red-700"
                         : "bg-yellow-100 text-yellow-700"
                       }`}>
-                      {mc.is_approved ? "Approved" : "Pending"}
+                      {mc.is_approved ? "Approved" : mc.rejection_reason ? "Rejected" : "Pending"}
                     </span>
                   </td>
                   <td className="px-5 py-4">

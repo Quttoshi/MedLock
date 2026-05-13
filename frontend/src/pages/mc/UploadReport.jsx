@@ -110,7 +110,7 @@ function MCUploadReport() {
               <input
                 id="file-input"
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif"
+                accept=".pdf,.jpg,.jpeg,.png,.docx,.doc"
                 onChange={(e) => setFile(e.target.files[0])}
                 className="hidden"
               />

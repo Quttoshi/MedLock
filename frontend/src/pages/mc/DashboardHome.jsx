@@ -101,7 +101,7 @@ function MCDashboardHome() {
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-800">
-          Good day, {user?.name?.split(" ")[0]} 👋
+          Welcome, {user?.name}
         </h1>
         <p className="text-gray-500 mt-1 text-sm">
           Here is an overview of your Medical Center account.

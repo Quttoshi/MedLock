@@ -15,7 +15,7 @@ function DoctorAccessRequests() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ report_id: "", reason: "" });
+  const [form, setForm] = useState({ patient_email: "", reason: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -35,19 +35,20 @@ function DoctorAccessRequests() {
     : requests.filter((r) => r.status === filter);
 
   const handleSubmit = async () => {
-    if (!form.report_id.trim() || !form.reason.trim()) {
-      setError("Both Report ID and reason are required.");
+    if (!form.patient_email.trim()) {
+      setError("Patient email is required.");
       return;
     }
     setSubmitting(true);
     setError("");
     try {
-      await submitAccessRequest(token, {
-        report_id: form.report_id.trim(),
-        reason: form.reason.trim(),
+      const res = await submitAccessRequest(token, {
+        patient_email: form.patient_email.trim(),
+        reason: form.reason.trim() || null,
       });
-      setSuccess("Access request submitted successfully.");
-      setForm({ report_id: "", reason: "" });
+      const d = res.data;
+      setSuccess(`Access request sent to ${d.patient_name || d.patient_email} for ${d.reports_requested} report(s).${d.already_pending > 0 ? ` ${d.already_pending} already pending.` : ""}`);
+      setForm({ patient_email: "", reason: "" });
       setShowForm(false);
       fetchRequests();
     } catch (e) {
@@ -64,7 +65,7 @@ function DoctorAccessRequests() {
           <p className="text-gray-500 text-sm mt-1">Submit and track your patient record access requests.</p>
         </div>
         <button
-          onClick={() => { setShowForm(true); setError(""); setSuccess(""); }}
+          onClick={() => { setShowForm(true); setError(""); setSuccess(""); setForm({ patient_email: "", reason: "" }); }}
           className="px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition"
         >
           + New Request
@@ -105,7 +106,7 @@ function DoctorAccessRequests() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Report ID</th>
+                <th className="text-left px-5 py-3 text-gray-500 font-medium">Patient</th>
                 <th className="text-left px-5 py-3 text-gray-500 font-medium">Reason</th>
                 <th className="text-left px-5 py-3 text-gray-500 font-medium">Status</th>
                 <th className="text-left px-5 py-3 text-gray-500 font-medium">Submitted</th>
@@ -115,10 +116,11 @@ function DoctorAccessRequests() {
             <tbody className="divide-y divide-gray-50">
               {filtered.map((req) => (
                 <tr key={req.id} className="hover:bg-gray-50 transition">
-                  <td className="px-5 py-4 font-mono text-xs text-gray-600">
-                    {req.report_id?.slice(0, 8)}...
+                  <td className="px-5 py-4">
+                    <p className="text-sm font-medium text-gray-800">{req.patient_name || "—"}</p>
+                    <p className="text-xs text-gray-400">{req.patient_email || ""}</p>
                   </td>
-                  <td className="px-5 py-4 text-gray-600 max-w-xs truncate">{req.reason}</td>
+                  <td className="px-5 py-4 text-gray-500 max-w-xs truncate text-sm">{req.reason?.trim() || <span className="text-gray-300">—</span>}</td>
                   <td className="px-5 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusColors[req.status] || "bg-gray-100 text-gray-600"}`}>
                       {req.status}
@@ -143,7 +145,7 @@ function DoctorAccessRequests() {
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-bold text-gray-800 mb-1">New Access Request</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Enter the Report ID and your clinical reason for requesting access.
+              Enter the patient's email to request access to all their approved reports.
             </p>
 
             {error && (
@@ -154,17 +156,21 @@ function DoctorAccessRequests() {
 
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Report ID</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">
+                  Patient Email <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="text"
-                  value={form.report_id}
-                  onChange={(e) => setForm({ ...form, report_id: e.target.value })}
-                  placeholder="Enter the patient's report ID"
+                  type="email"
+                  value={form.patient_email}
+                  onChange={(e) => setForm({ ...form, patient_email: e.target.value })}
+                  placeholder="patient@example.com"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Clinical Reason</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">
+                  Clinical Reason <span className="text-gray-400">(optional)</span>
+                </label>
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}

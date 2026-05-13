@@ -60,22 +60,21 @@ function PendingCard({ request, onApprove, onDeny, actionLoading }) {
             <StatusBadge status={request.status} />
           </div>
 
-          {/* Report info */}
-          <div className="mt-3 p-3 bg-gray-50 rounded-xl">
-            <p className="text-xs text-gray-500 mb-0.5">Requesting access to</p>
-            <p className="text-sm font-medium text-gray-700 truncate">
-              {request.report_name}
-            </p>
-            <p className="text-xs text-gray-400">{request.report_type}</p>
+          {/* Scope */}
+          <div className="mt-3 p-3 bg-gray-50 rounded-xl flex items-center gap-2">
+            <svg className="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-sm text-gray-600">Requesting access to <span className="font-medium text-gray-800">all your medical records</span></p>
           </div>
 
           {/* Reason */}
-          <div className="mt-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Reason
-            </p>
-            <p className="text-sm text-gray-600">{request.reason}</p>
-          </div>
+          {request.reason?.trim() && (
+            <div className="mt-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Reason</p>
+              <p className="text-sm text-gray-600">{request.reason}</p>
+            </div>
+          )}
 
           {/* Date */}
           <p className="text-xs text-gray-400 mt-3">
@@ -137,10 +136,10 @@ function HistoryCard({ request, onRevoke, actionLoading }) {
             <StatusBadge status={request.status} />
           </div>
 
-          <p className="text-sm text-gray-500 mt-2 truncate">
-            {request.report_name} — {request.report_type}
-          </p>
-          <p className="text-sm text-gray-600 mt-1">{request.reason}</p>
+          <p className="text-sm text-gray-500 mt-2">All medical records</p>
+          {request.reason?.trim() && (
+            <p className="text-sm text-gray-600 mt-1">{request.reason}</p>
+          )}
 
           <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-400">
             <span>Requested: {formatDate(request.requested_at)}</span>

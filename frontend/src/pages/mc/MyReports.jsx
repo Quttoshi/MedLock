@@ -76,8 +76,8 @@ function MCMyReports() {
                     {report.patient_name || report.patient_email || "—"}
                   </td>
                   <td className="px-5 py-4 text-gray-500">
-                    {report.created_at
-                      ? new Date(report.created_at).toLocaleDateString()
+                    {report.uploaded_at
+                      ? new Date(report.uploaded_at).toLocaleDateString()
                       : "—"}
                   </td>
                   <td className="px-5 py-4">

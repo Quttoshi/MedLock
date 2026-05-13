@@ -5,12 +5,16 @@ import { getAdminAuditLogs } from "../../api/admin";
 const actionColors = {
   login: "bg-blue-100 text-blue-700",
   logout: "bg-gray-100 text-gray-600",
-  upload: "bg-green-100 text-green-700",
-  access_grant: "bg-purple-100 text-purple-700",
-  access_deny: "bg-red-100 text-red-700",
-  access_revoke: "bg-orange-100 text-orange-700",
-  mc_approve: "bg-teal-100 text-teal-700",
-  mc_reject: "bg-red-100 text-red-700",
+  report_upload: "bg-green-100 text-green-700",
+  mc_report_upload: "bg-green-100 text-green-700",
+  access_approved: "bg-purple-100 text-purple-700",
+  access_denied: "bg-red-100 text-red-700",
+  access_revoked: "bg-orange-100 text-orange-700",
+  medical_center_approved: "bg-teal-100 text-teal-700",
+  medical_center_rejected: "bg-red-100 text-red-700",
+  doctor_verified: "bg-indigo-100 text-indigo-700",
+  doctor_unverified: "bg-yellow-100 text-yellow-700",
+  register: "bg-cyan-100 text-cyan-700",
 };
 
 function AuditLogs() {
@@ -35,8 +39,10 @@ function AuditLogs() {
   }, [token, action]);
 
   const actionTypes = [
-    "", "login", "logout", "upload", "access_grant",
-    "access_deny", "access_revoke", "mc_approve", "mc_reject"
+    "", "login", "logout", "report_upload", "mc_report_upload",
+    "access_approved", "access_denied", "access_revoked",
+    "medical_center_approved", "medical_center_rejected",
+    "doctor_verified", "doctor_unverified", "register"
   ];
 
   return (
@@ -58,7 +64,7 @@ function AuditLogs() {
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               }`}
           >
-            {a === "" ? "All" : a.replace("_", " ")}
+            {a === "" ? "All" : a.replaceAll("_", " ")}
           </button>
         ))}
       </div>
@@ -84,10 +90,10 @@ function AuditLogs() {
                 <tr key={log.id} className="hover:bg-gray-50 transition">
                   <td className="px-5 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${actionColors[log.action] || "bg-gray-100 text-gray-600"}`}>
-                      {log.action?.replace("_", " ")}
+                      {log.action?.replaceAll("_", " ")}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-gray-500">{log.performed_by || "—"}</td>
+                  <td className="px-5 py-4 text-gray-500">{log.performer_name || log.performed_by || "—"}</td>
                   <td className="px-5 py-4 text-gray-500">
                     {log.entity_type ? `${log.entity_type} #${log.entity_id}` : "—"}
                   </td>
