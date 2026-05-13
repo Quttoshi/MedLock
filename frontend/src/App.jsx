@@ -25,6 +25,7 @@ import DoctorLayout from "./layouts/DoctorLayout";
 import DoctorDashboardHome from "./pages/doctor/DashboardHome";
 import DoctorAccessRequests from "./pages/doctor/AccessRequests";
 import DoctorNotifications from "./pages/doctor/Notifications";
+import DoctorAffiliation from "./pages/doctor/Affiliation";
 import MyPatients from "./pages/doctor/MyPatients";
 import PatientReports from "./pages/doctor/PatientReports";
 import ReportViewer from "./pages/doctor/ReportViewer";
@@ -35,6 +36,7 @@ import MCDashboardHome from "./pages/mc/DashboardHome";
 import MCUploadReport from "./pages/mc/UploadReport";
 import MCMyReports from "./pages/mc/MyReports";
 import MCMyDoctors from "./pages/mc/MyDoctors";
+import MCNotifications from "./pages/mc/Notifications";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 
@@ -117,6 +119,7 @@ function App() {
         <Route path="patients/:patientId/reports" element={<PatientReports />} />
         <Route path="patients/:patientId/reports/:reportId/view" element={<ReportViewer />} />
         <Route path="access-requests" element={<DoctorAccessRequests />} />
+        <Route path="affiliation" element={<DoctorAffiliation />} />
         <Route path="notifications" element={<DoctorNotifications />} />
       </Route>
 
@@ -133,6 +136,7 @@ function App() {
         <Route path="upload" element={<MCUploadReport />} />
         <Route path="reports" element={<MCMyReports />} />
         <Route path="doctors" element={<MCMyDoctors />} />
+        <Route path="notifications" element={<MCNotifications />} />
       </Route>
     </Routes>
   );

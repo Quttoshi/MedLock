@@ -1,18 +1,45 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { getMCDoctors } from "../../api/medicalCenter";
+import { getMCDoctors, getAffiliationRequests, approveAffiliation, rejectAffiliation } from "../../api/medicalCenter";
 
 function MCMyDoctors() {
   const { token } = useAuth();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [affiliations, setAffiliations] = useState([]);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [rejectReason, setRejectReason] = useState({});
+
+  const fetchAffiliations = () =>
+    getAffiliationRequests(token, "pending")
+      .then((res) => setAffiliations(res.data))
+      .catch(() => setAffiliations([]));
+
+  const handleApprove = async (id) => {
+    setActionLoading(id);
+    try {
+      await approveAffiliation(token, id);
+      await fetchAffiliations();
+    } catch {}
+    setActionLoading(null);
+  };
+
+  const handleReject = async (id) => {
+    setActionLoading(id);
+    try {
+      await rejectAffiliation(token, id, rejectReason[id] || "");
+      await fetchAffiliations();
+    } catch {}
+    setActionLoading(null);
+  };
 
   useEffect(() => {
     getMCDoctors(token)
       .then((res) => setDoctors(res.data))
       .catch(() => setDoctors([]))
       .finally(() => setLoading(false));
+    fetchAffiliations();
   }, [token]);
 
   const filtered = filter === "all"
@@ -29,6 +56,65 @@ function MCMyDoctors() {
           Doctors registered and verified under your medical center.
         </p>
       </div>
+
+      {/* Pending Affiliation Requests */}
+      {affiliations.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-yellow-100 p-6 mb-6">
+          <h2 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>
+            Pending Affiliation Requests
+          </h2>
+          <div className="space-y-4">
+            {affiliations.map((req) => (
+              <div key={req.id} className="bg-gray-50 rounded-xl p-4">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{req.doctor_name}</p>
+                    <p className="text-xs text-gray-400">{req.doctor_email}</p>
+                    <div className="flex gap-3 mt-1.5">
+                      {req.specialization && (
+                        <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-lg font-medium capitalize">
+                          {req.specialization}
+                        </span>
+                      )}
+                      {req.license_number && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg font-mono">
+                          {req.license_number}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 min-w-[180px]">
+                    <input
+                      type="text"
+                      placeholder="Rejection reason (optional)"
+                      value={rejectReason[req.id] || ""}
+                      onChange={(e) => setRejectReason({ ...rejectReason, [req.id]: e.target.value })}
+                      className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApprove(req.id)}
+                        disabled={actionLoading === req.id}
+                        className="flex-1 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(req.id)}
+                        disabled={actionLoading === req.id}
+                        className="flex-1 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filter */}
       <div className="flex gap-2 mb-6">

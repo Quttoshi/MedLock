@@ -24,6 +24,16 @@ export const getMyAccessRequests = (token) =>
 export const submitAccessRequest = (token, data) =>
   api.post("/access-requests", data, { headers: getHeaders(token) });
 
+// Affiliation
+export const searchMedicalCenters = (token, query) =>
+  api.get(`/doctor/medical-centers${query ? `?search=${encodeURIComponent(query)}` : ""}`, { headers: getHeaders(token) });
+
+export const requestAffiliation = (token, data) =>
+  api.post("/doctor/affiliations/request", data, { headers: getHeaders(token) });
+
+export const getMyAffiliations = (token) =>
+  api.get("/doctor/affiliations", { headers: getHeaders(token) });
+
 // Query patient history
 export const queryPatientHistory = (token, patientId, question) =>
   api.post(

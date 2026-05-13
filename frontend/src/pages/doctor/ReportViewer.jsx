@@ -33,24 +33,26 @@ function ReportViewer() {
     setPreviewLoading(true);
     downloadReport(token, patientId, reportId)
       .then((res) => {
-        const blob = new Blob([res.data]);
+        const filename = report.original_filename || "";
+        let mimeType = "application/octet-stream";
+        let type = "unknown";
+        if (filename.endsWith(".pdf")) {
+          mimeType = "application/pdf";
+          type = "pdf";
+        } else if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) {
+          mimeType = "image/jpeg";
+          type = "image";
+        } else if (filename.endsWith(".png")) {
+          mimeType = "image/png";
+          type = "image";
+        } else if (filename.endsWith(".tiff") || filename.endsWith(".tif")) {
+          mimeType = "image/tiff";
+          type = "image";
+        }
+        const blob = new Blob([res.data], { type: mimeType });
         const url = window.URL.createObjectURL(blob);
         setPreviewUrl(url);
-        // Determine type from filename or content-type
-        const filename = report.original_filename || "";
-        if (filename.endsWith(".pdf")) {
-          setPreviewType("pdf");
-        } else if (
-          filename.endsWith(".jpg") ||
-          filename.endsWith(".jpeg") ||
-          filename.endsWith(".png") ||
-          filename.endsWith(".tiff") ||
-          filename.endsWith(".tif")
-        ) {
-          setPreviewType("image");
-        } else {
-          setPreviewType("unknown");
-        }
+        setPreviewType(type);
       })
       .catch(() => {
         setError("Could not load preview. You can still download the file.");
