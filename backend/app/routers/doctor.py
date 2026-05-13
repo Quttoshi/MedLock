@@ -65,14 +65,11 @@ def get_accessible_patients(
 
     seen_patients = {}
     for req in approved:
-        report = req.medical_report
-        if not report:
-            continue
-        patient = report.patient
+        patient = req.patient
         if not patient or str(patient.id) in seen_patients:
             continue
         seen_patients[str(patient.id)] = {
-            "patient_id": str(patient.id),
+            "id": str(patient.id),
             "name": patient.user.full_name if patient.user else None,
             "email": patient.user.email if patient.user else None,
             "date_of_birth": patient.date_of_birth,
