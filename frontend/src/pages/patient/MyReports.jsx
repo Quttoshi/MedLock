@@ -32,28 +32,56 @@ function MyReports() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("All");
+  const [actionLoading, setActionLoading] = useState(null);
+
+  const fetchReports = async () => {
+    try {
+      const res = await api.get("/reports/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setReports(res.data);
+    } catch {
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ── Fetch Reports ────────────────────────────────────
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const res = await api.get("/reports/my", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setReports(res.data);
-      } catch {
-        setReports([]);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchReports();
   }, [token]);
 
-  // ── Filter + Search ──────────────────────────────────
-  const reportTypes = ["All", ...new Set(reports.map((r) => r.report_type))];
+  const handleApprove = async (reportId) => {
+    setActionLoading(reportId + "_approve");
+    try {
+      await api.patch(`/reports/${reportId}/approve`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await fetchReports();
+    } catch {}
+    setActionLoading(null);
+  };
 
-  const filtered = reports.filter((r) => {
+  const handleReject = async (reportId) => {
+    setActionLoading(reportId + "_reject");
+    try {
+      await api.patch(`/reports/${reportId}/reject`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await fetchReports();
+    } catch {}
+    setActionLoading(null);
+  };
+
+  // ── Split pending vs approved ─────────────────────────
+  const pendingReports = reports.filter((r) => !r.is_approved);
+  const approvedReports = reports.filter((r) => r.is_approved);
+
+  // ── Filter + Search (approved only) ──────────────────
+  const reportTypes = ["All", ...new Set(approvedReports.map((r) => r.report_type))];
+
+  const filtered = approvedReports.filter((r) => {
     const name = r.original_filename || r.name || "";
     const matchesSearch =
       name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -86,7 +114,12 @@ function MyReports() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">My Reports</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {reports.length} report{reports.length !== 1 ? "s" : ""} uploaded
+            {approvedReports.length} report{approvedReports.length !== 1 ? "s" : ""} in your record
+            {pendingReports.length > 0 && (
+              <span className="ml-2 bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                {pendingReports.length} awaiting approval
+              </span>
+            )}
           </p>
         </div>
         <button
@@ -103,6 +136,62 @@ function MyReports() {
           Upload New
         </button>
       </div>
+
+      {/* Pending Approval Section */}
+      {!loading && pendingReports.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold text-yellow-700 mb-3 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Reports Awaiting Your Approval
+          </h2>
+          <div className="space-y-3">
+            {pendingReports.map((report) => (
+              <div key={report.id} className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className="w-11 h-11 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">
+                        {report.original_filename}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {report.report_type} · Uploaded by Medical Center
+                      </p>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        Review this report before it is added to your medical record.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleReject(report.id)}
+                      disabled={!!actionLoading}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                    >
+                      {actionLoading === report.id + "_reject" ? "..." : "Reject"}
+                    </button>
+                    <button
+                      onClick={() => handleApprove(report.id)}
+                      disabled={!!actionLoading}
+                      className="px-3 py-1.5 text-xs rounded-lg bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-50"
+                    >
+                      {actionLoading === report.id + "_approve" ? "..." : "Approve"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search + Filter */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

@@ -3,21 +3,25 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 
-function VerificationBadge({ status }) {
-  const styles = {
-    verified: "bg-green-100 text-green-700 border-green-200",
-    tampered: "bg-red-100 text-red-700 border-red-200",
-    pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  };
-  const labels = {
-    verified: "✓ Blockchain Verified",
-    tampered: "✗ Integrity Compromised",
-    pending: "⏳ Verification Pending",
-  };
+function BlockchainBadge({ logs }) {
+  if (!logs || logs.length === 0) return null;
+
+  const confirmed = logs.some((l) => l.status === "confirmed");
+  const pending = logs.some((l) => l.status === "pending");
+
+  if (confirmed) return (
+    <span className="text-sm font-semibold px-3 py-1.5 rounded-full border bg-green-100 text-green-700 border-green-200">
+      ✓ Blockchain Verified
+    </span>
+  );
+  if (pending) return (
+    <span className="text-sm font-semibold px-3 py-1.5 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200">
+      ⏳ Blockchain Pending
+    </span>
+  );
   return (
-    <span className={`text-sm font-semibold px-3 py-1.5 rounded-full 
-                      border ${styles[status] || styles.pending}`}>
-      {labels[status] || "⏳ Pending"}
+    <span className="text-sm font-semibold px-3 py-1.5 rounded-full border bg-gray-100 text-gray-600 border-gray-200">
+      — Not on Chain
     </span>
   );
 }
@@ -30,21 +34,36 @@ function ReportDetail() {
 
   const [report, setReport] = useState(null);
   const [ocrData, setOcrData] = useState(null);
+  const [blockchainLogs, setBlockchainLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ── Fetch Report + OCR ───────────────────────────────
+  // ── Fetch Report + OCR + Blockchain ──────────────────
   useEffect(() => {
     const headers = { Authorization: `Bearer ${token}` };
     const fetchAll = async () => {
       try {
         const res = await api.get(`/reports/${id}`, { headers });
         setReport(res.data);
-        // fetch OCR separately — may not exist for all reports
         try {
           const ocrRes = await api.get(`/reports/${id}/ocr`, { headers });
           setOcrData(ocrRes.data);
         } catch {
           setOcrData(null);
+        }
+        try {
+          const chainRes = await api.get(`/reports/${id}/blockchain`, { headers });
+          let logs = chainRes.data;
+          // Auto-confirm any pending transactions
+          if (logs.some((l) => l.status === "pending")) {
+            try {
+              await api.post(`/reports/${id}/blockchain/confirm`, {}, { headers });
+              const refreshed = await api.get(`/reports/${id}/blockchain`, { headers });
+              logs = refreshed.data;
+            } catch {}
+          }
+          setBlockchainLogs(logs);
+        } catch {
+          setBlockchainLogs([]);
         }
       } catch {
         setReport(null);
@@ -142,7 +161,7 @@ function ReportDetail() {
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <VerificationBadge status={report.verification_status || "pending"} />
+            <BlockchainBadge logs={blockchainLogs} />
             <button
               onClick={handleDownload}
               className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition"
@@ -170,9 +189,28 @@ function ReportDetail() {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">SHA-256 Hash</p>
           <p className="text-sm font-mono text-gray-700 break-all">{report.file_hash_sha256}</p>
         </div>
-        <p className="text-xs text-gray-400 mt-3">
-          Blockchain verification will be available once the Ethereum integration is complete.
-        </p>
+        {blockchainLogs.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {blockchainLogs.map((log) => (
+              <div key={log.id} className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-xl px-4 py-2">
+                <span className="capitalize font-medium">{log.event_type?.replace("_", " ")}</span>
+                <span className={`font-semibold ${log.status === "confirmed" ? "text-green-600" : "text-yellow-600"}`}>
+                  {log.status}
+                </span>
+                {log.transaction_hash && (
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${log.transaction_hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
+                    View on Etherscan →
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* OCR Clinical Data */}

@@ -223,7 +223,7 @@ function UploadReport() {
                 id="fileInput"
                 type="file"
                 className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                accept=".pdf,.jpg,.jpeg,.png,.docx,.doc"
                 onChange={(e) => {
                   if (e.target.files[0]) handleFileSelect(e.target.files[0]);
                 }}
