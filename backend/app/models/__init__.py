@@ -7,5 +7,6 @@ from app.models.medical_report import MedicalReport
 from app.models.ocr_result import OcrResult
 from app.models.blockchain_log import BlockchainLog
 from app.models.access_request import AccessRequest
+from app.models.affiliation_request import AffiliationRequest
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification

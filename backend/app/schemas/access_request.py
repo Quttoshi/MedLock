@@ -5,15 +5,15 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
-class AccessRequestCreate(BaseModel):
-    report_id: UUID
-    reason: str
+class AccessRequestByEmail(BaseModel):
+    patient_email: str
+    reason: Optional[str] = None
 
 
 class AccessRequestResponse(BaseModel):
     id: UUID
     status: str
-    reason: str
+    reason: Optional[str] = None
     requested_at: datetime
     decided_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
@@ -22,12 +22,9 @@ class AccessRequestResponse(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialization: Optional[str] = None
 
-    # Report info
-    report_name: Optional[str] = None
-    report_type: Optional[str] = None
-
-    # Doctor view extras
+    # Patient info (for doctor view)
     patient_name: Optional[str] = None
+    patient_email: Optional[str] = None
 
     class Config:
         from_attributes = True

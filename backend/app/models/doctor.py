@@ -21,3 +21,4 @@ class Doctor(Base):
     user = relationship("User", back_populates="doctor")
     medical_center = relationship("MedicalCenter", back_populates="doctors")
     access_requests = relationship("AccessRequest", back_populates="doctor")
+    affiliation_requests = relationship("AffiliationRequest", back_populates="doctor")

@@ -28,4 +28,3 @@ class MedicalReport(Base):
     medical_center = relationship("MedicalCenter", back_populates="medical_reports")
     ocr_result = relationship("OcrResult", back_populates="medical_report", uselist=False)
     blockchain_logs = relationship("BlockchainLog", back_populates="medical_report")
-    access_requests = relationship("AccessRequest", back_populates="medical_report")

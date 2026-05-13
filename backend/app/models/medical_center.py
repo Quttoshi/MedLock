@@ -27,3 +27,4 @@ class MedicalCenter(Base):
     approved_by_admin = relationship("Admin", back_populates="approved_medical_centers")
     doctors = relationship("Doctor", back_populates="medical_center")
     medical_reports = relationship("MedicalReport", back_populates="medical_center")
+    affiliation_requests = relationship("AffiliationRequest", back_populates="medical_center")

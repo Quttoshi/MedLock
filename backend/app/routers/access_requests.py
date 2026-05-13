@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies.rbac import require_role
 from app.models.user import User
-from app.schemas.access_request import AccessRequestCreate, AccessRequestResponse
+from app.schemas.access_request import AccessRequestByEmail, AccessRequestResponse
 from app.services.access_request_service import (
     approve_request,
-    create_access_request,
+    create_access_request_by_email,
     deny_request,
     get_requests_for_doctor,
     get_requests_for_patient,
@@ -22,16 +22,16 @@ router = APIRouter(prefix="/access-requests", tags=["Access Requests"])
 
 # ── Doctor endpoints ─────────────────────────────────
 
-@router.post("", response_model=AccessRequestResponse, status_code=201)
+@router.post("", status_code=201)
 def submit_request(
-    data: AccessRequestCreate,
+    data: AccessRequestByEmail,
     request: Request,
     current_user: User = Depends(require_role(["doctor"])),
     db: Session = Depends(get_db),
 ):
-    result = create_access_request(data, current_user, db)
+    result = create_access_request_by_email(data, current_user, db)
     log_action(db, action="access_request_submitted", performed_by=current_user.id,
-               entity_type="access_request", entity_id=result.id, request=request)
+               entity_type="patient", request=request)
     return result
 
 

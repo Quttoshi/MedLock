@@ -100,6 +100,8 @@ def download_report(
         "jpg": "image/jpeg",
         "jpeg": "image/jpeg",
         "png": "image/png",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "doc": "application/msword",
     }
     content_type = content_type_map.get(ext, "application/octet-stream")
 
@@ -165,6 +167,68 @@ def get_blockchain_logs(
         }
         for log in logs
     ]
+
+
+@router.patch("/{report_id}/approve")
+def approve_report(
+    report_id: str,
+    request: Request = None,
+    current_user: User = Depends(require_role(["patient"])),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
+    report = db.query(MedicalReport).filter(
+        MedicalReport.id == uuid.UUID(report_id),
+        MedicalReport.patient_id == patient.id,
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    if report.is_approved:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is already approved")
+    report.is_approved = True
+    db.commit()
+    log_action(
+        db,
+        action="report_approved",
+        performed_by=current_user.id,
+        entity_type="medical_report",
+        entity_id=report.id,
+        request=request,
+    )
+    return {"message": "Report approved"}
+
+
+@router.patch("/{report_id}/reject")
+def reject_report(
+    report_id: str,
+    request: Request = None,
+    current_user: User = Depends(require_role(["patient"])),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
+    report = db.query(MedicalReport).filter(
+        MedicalReport.id == uuid.UUID(report_id),
+        MedicalReport.patient_id == patient.id,
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    if report.upload_source == "patient":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot reject a self-uploaded report")
+    db.delete(report)
+    db.commit()
+    log_action(
+        db,
+        action="report_rejected",
+        performed_by=current_user.id,
+        entity_type="medical_report",
+        entity_id=uuid.UUID(report_id),
+        request=request,
+    )
+    return {"message": "Report rejected and removed"}
 
 
 @router.post("/{report_id}/blockchain/confirm")

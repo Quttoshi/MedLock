@@ -21,3 +21,4 @@ class Patient(Base):
     # Relationships
     user = relationship("User", back_populates="patient")
     medical_reports = relationship("MedicalReport", back_populates="patient")
+    access_requests = relationship("AccessRequest", back_populates="patient")
