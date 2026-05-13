@@ -6,11 +6,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies.rbac import require_role
 from app.models.access_request import AccessRequest
+from app.models.affiliation_request import AffiliationRequest
 from app.models.doctor import Doctor
+from app.models.medical_center import MedicalCenter
 from app.models.medical_report import MedicalReport
 from app.models.patient import Patient
 from app.models.user import User
 from app.models.ocr_result import OcrResult
+from datetime import datetime, timezone
+
 from app.services.encryption_service import decrypt_file
 from app.services.storage_service import get_supabase, BUCKET_NAME
 from app.services.access_request_service import check_doctor_has_access
@@ -109,6 +113,100 @@ def get_patient_reports(
     return accessible
 
 
+@router.get("/medical-centers")
+def list_medical_centers(
+    search: str = None,
+    current_user: User = Depends(require_role(["doctor"])),
+    db: Session = Depends(get_db),
+):
+    """List approved medical centers, optionally filtered by name search."""
+    q = db.query(MedicalCenter).filter(MedicalCenter.is_approved == True)
+    if search:
+        q = q.filter(MedicalCenter.name.ilike(f"%{search}%"))
+    centers = q.all()
+    return [
+        {
+            "id": str(c.id),
+            "name": c.name,
+            "address": c.address,
+        }
+        for c in centers
+    ]
+
+
+@router.post("/affiliations/request", status_code=201)
+def request_affiliation(
+    body: dict,
+    current_user: User = Depends(require_role(["doctor"])),
+    db: Session = Depends(get_db),
+):
+    """Doctor requests affiliation with a medical center."""
+    doctor = _get_doctor(current_user, db)
+
+    if doctor.medical_center_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You are already affiliated with a medical center. Revoke it first.",
+        )
+
+    mc_id = body.get("medical_center_id")
+    reason = body.get("reason", "").strip() or None
+
+    if not mc_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="medical_center_id is required")
+
+    mc = db.query(MedicalCenter).filter(MedicalCenter.id == uuid.UUID(mc_id), MedicalCenter.is_approved == True).first()
+    if not mc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical center not found or not approved")
+
+    existing = db.query(AffiliationRequest).filter(
+        AffiliationRequest.doctor_id == doctor.id,
+        AffiliationRequest.medical_center_id == mc.id,
+        AffiliationRequest.status == "pending",
+    ).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A pending affiliation request already exists for this medical center")
+
+    req = AffiliationRequest(
+        doctor_id=doctor.id,
+        medical_center_id=mc.id,
+        reason=reason,
+        status="pending",
+    )
+    db.add(req)
+    db.commit()
+    db.refresh(req)
+
+    return {
+        "id": str(req.id),
+        "medical_center": mc.name,
+        "status": req.status,
+        "requested_at": req.requested_at,
+    }
+
+
+@router.get("/affiliations")
+def my_affiliation_requests(
+    current_user: User = Depends(require_role(["doctor"])),
+    db: Session = Depends(get_db),
+):
+    """View all affiliation requests submitted by this doctor."""
+    doctor = _get_doctor(current_user, db)
+    requests = db.query(AffiliationRequest).filter(AffiliationRequest.doctor_id == doctor.id).all()
+    return [
+        {
+            "id": str(r.id),
+            "medical_center": r.medical_center.name if r.medical_center else None,
+            "status": r.status,
+            "reason": r.reason,
+            "rejection_reason": r.rejection_reason,
+            "requested_at": r.requested_at,
+            "decided_at": r.decided_at,
+        }
+        for r in requests
+    ]
+
+
 @router.get("/patients/{patient_id}/reports/{report_id}/download")
 def download_patient_report(
     patient_id: str,
@@ -136,7 +234,14 @@ def download_patient_report(
     original_bytes = decrypt_file(encrypted_bytes, report.encryption_key_ref)
 
     ext = report.original_filename.rsplit(".", 1)[-1].lower() if "." in report.original_filename else ""
-    content_type_map = {"pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png"}
+    content_type_map = {
+        "pdf": "application/pdf",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "doc": "application/msword",
+    }
     content_type = content_type_map.get(ext, "application/octet-stream")
 
     return Response(

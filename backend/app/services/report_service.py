@@ -12,7 +12,13 @@ from app.services.notification_service import create_notification
 from app.services.ocr_service import run_ocr
 from app.services.blockchain_service import log_event as blockchain_log
 
-ALLOWED_CONTENT_TYPES = {"application/pdf", "image/jpeg", "image/png"}
+ALLOWED_CONTENT_TYPES = {
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
+    "application/msword",  # .doc
+}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
