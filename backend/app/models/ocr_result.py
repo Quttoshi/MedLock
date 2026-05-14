@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Text, DateTime, ForeignKey, String, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
@@ -16,6 +16,12 @@ class OcrResult(Base):
     extracted_text = Column(Text, nullable=True)
     structured_data = Column(JSONB, nullable=True)
     abnormal_values = Column(JSONB, nullable=True)
+    status = Column(String, default="completed", nullable=False)
+    error_message = Column(Text, nullable=True)
+    parser_version = Column(String, default="medical-ocr-v2", nullable=False)
+    ocr_engine = Column(String, nullable=True)
+    raw_text_length = Column(Integer, default=0, nullable=False)
+    structured_count = Column(Integer, default=0, nullable=False)
     processed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships

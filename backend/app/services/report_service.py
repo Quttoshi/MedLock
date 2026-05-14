@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -12,10 +13,13 @@ from app.services.notification_service import create_notification
 from app.services.ocr_service import run_ocr
 from app.services.blockchain_service import log_event as blockchain_log
 
+logger = logging.getLogger(__name__)
+
 ALLOWED_CONTENT_TYPES = {
     "application/pdf",
     "image/jpeg",
     "image/png",
+    "image/tiff",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
     "application/msword",  # .doc
 }
@@ -24,7 +28,7 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 def upload_report(file: UploadFile, report_type: str, current_user: User, db: Session) -> MedicalReport:
     if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only PDF, JPEG, and PNG files are allowed")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only PDF, JPEG, PNG, TIFF, DOC, and DOCX files are allowed")
 
     file_bytes = file.file.read()
 
@@ -79,7 +83,7 @@ def upload_report(file: UploadFile, report_type: str, current_user: User, db: Se
     try:
         run_ocr(report, file_bytes, db)
     except Exception:
-        pass
+        logger.exception("Unexpected OCR failure for report %s", report.id)
 
     # Notify patient of successful upload
     try:

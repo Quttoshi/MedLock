@@ -134,6 +134,12 @@ def get_report_ocr(
         "extracted_text": ocr.extracted_text,
         "structured_data": ocr.structured_data,
         "abnormal_values": ocr.abnormal_values,
+        "status": ocr.status,
+        "error_message": ocr.error_message,
+        "parser_version": ocr.parser_version,
+        "ocr_engine": ocr.ocr_engine,
+        "raw_text_length": ocr.raw_text_length,
+        "structured_count": ocr.structured_count,
         "processed_at": ocr.processed_at,
     }
 
