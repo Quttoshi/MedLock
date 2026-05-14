@@ -26,7 +26,6 @@ function BlockchainBadge({ logs }) {
   );
 }
 
-
 function ReportDetail() {
   const { id } = useParams();
   const { token } = useAuth();
@@ -36,6 +35,7 @@ function ReportDetail() {
   const [ocrData, setOcrData] = useState(null);
   const [blockchainLogs, setBlockchainLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const abnormalRows = ocrData?.abnormal_values || [];
 
   // ── Fetch Report + OCR + Blockchain ──────────────────
   useEffect(() => {
@@ -213,7 +213,7 @@ function ReportDetail() {
         )}
       </div>
 
-      {/* OCR Clinical Data */}
+      {/* Extracted Report Data */}
       {ocrData && (
         <div className="bg-white rounded-2xl border border-gray-100
                         shadow-sm p-6 mb-5">
@@ -227,31 +227,11 @@ function ReportDetail() {
                    002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0
                    002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            OCR Extracted Clinical Data
+            Extracted Report Data
           </h2>
 
-          {/* Abnormal Values Warning */}
-          {ocrData.abnormal_values?.length > 0 && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-100 rounded-xl">
-              <p className="text-sm font-semibold text-red-700 mb-2">
-                Abnormal Values Detected
-              </p>
-              <div className="space-y-1">
-                {ocrData.abnormal_values.map((val, i) => (
-                  <p key={i} className="text-sm text-red-600">
-                    <span className="font-semibold capitalize">{val.test}:</span>{" "}
-                    {val.value} {val.unit}
-                    <span className="ml-2 text-xs text-red-400">
-                      (Normal: {val.normal_range})
-                    </span>
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Structured Data Table */}
-          {ocrData.structured_data?.length > 0 && (
+          {/* Abnormal Evidence Table */}
+          {abnormalRows.length > 0 && (
             <div className="overflow-x-auto rounded-xl border border-gray-100">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
@@ -263,41 +243,79 @@ function ReportDetail() {
                       Value
                     </th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Status
+                      Report Reference
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Source Evidence
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {ocrData.structured_data.map((row, i) => {
-                    const isAbnormal = ocrData.abnormal_values?.some(
-                      (a) => a.test === row.test
-                    );
-                    return (
-                      <tr key={i} className={isAbnormal ? "bg-red-50" : ""}>
-                        <td className="px-4 py-3 font-medium text-gray-700 capitalize">
-                          {row.test}
-                        </td>
-                        <td className={`px-4 py-3 font-semibold ${isAbnormal ? "text-red-600" : "text-gray-800"}`}>
-                          {row.value} {row.unit}
-                        </td>
-                        <td className="px-4 py-3">
-                          {isAbnormal ? (
-                            <span className="text-xs font-bold text-red-500 bg-red-100 px-2 py-0.5 rounded-full">
-                              ABNORMAL
-                            </span>
-                          ) : (
-                            <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                              NORMAL
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {abnormalRows.map((row, i) => (
+                    <tr key={i}>
+                      <td className="px-4 py-3 font-medium text-gray-700 capitalize">
+                        {row.test}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-red-600">
+                        {row.value} {row.unit}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        <p>{row.normal_range || "-"}</p>
+                        {row.reference_text && (
+                          <p className="mt-1 text-[11px] text-gray-400">
+                            {row.reference_text}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500">
+                        {row.source_text ? (
+                          <details>
+                            <summary className="cursor-pointer font-medium text-gray-500">
+                              OCR line
+                            </summary>
+                            <p className="mt-2 max-w-xs whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-gray-500">
+                              {row.source_text}
+                            </p>
+                          </details>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           )}
+
+          {ocrData.structured_data?.length > 0 && abnormalRows.length === 0 && (
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
+              No abnormal values were identified from report-provided flags or reference ranges.
+            </div>
+          )}
+
+          {ocrData.structured_data?.length === 0 && (
+            <div className="rounded-xl border border-yellow-100 bg-yellow-50 p-4 text-sm text-yellow-800">
+              Text was extracted, but no report-evidence abnormal lab values matched the current parser.
+            </div>
+          )}
+
+          <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+              Extraction Details
+            </p>
+            <p className="text-xs text-gray-500">
+              Engine: {ocrData.ocr_engine || "unknown"} · Parser: {ocrData.parser_version || "unknown"} · Parsed rows: {ocrData.structured_count ?? ocrData.structured_data?.length ?? 0}
+            </p>
+            {ocrData.error_message && (
+              <p className="text-xs text-red-500 mt-2">{ocrData.error_message}</p>
+            )}
+            {ocrData.extracted_text && (
+              <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap text-xs text-gray-600 font-mono">
+                {ocrData.extracted_text}
+              </pre>
+            )}
+          </div>
         </div>
       )}
     </div>

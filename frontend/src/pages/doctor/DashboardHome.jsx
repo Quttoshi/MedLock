@@ -96,7 +96,7 @@ function DoctorDashboardHome() {
   const comingSoon = [
     {
       label: "Patient History",
-      description: "Visual analytics of a patient's entire medical history — trends, abnormal values over time, and risk indicators.",
+      description: "Visual analytics of a patient's medical history using extracted report evidence, timelines, and model-ready clinical context.",
       note: "Coming in Iteration 7",
     },
   ];

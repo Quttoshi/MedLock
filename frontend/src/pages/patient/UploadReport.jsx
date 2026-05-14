@@ -110,10 +110,11 @@ function UploadReport() {
       setReportType("");
       setProgress(0);
     } catch (err) {
-      if (err.response?.status === 415) {
-        setServerError("File type not supported by the server.");
+      const detail = err.response?.data?.detail;
+      if (detail) {
+        setServerError(detail);
       } else if (err.response?.status === 413) {
-        setServerError("File is too large. Maximum size is 50MB.");
+        setServerError("File is too large. Maximum size is 10MB.");
       } else {
         setServerError("Upload failed. Please check your connection and try again.");
       }
@@ -223,7 +224,7 @@ function UploadReport() {
                 id="fileInput"
                 type="file"
                 className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png,.docx,.doc"
+                accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.docx,.doc"
                 onChange={(e) => {
                   if (e.target.files[0]) handleFileSelect(e.target.files[0]);
                 }}
