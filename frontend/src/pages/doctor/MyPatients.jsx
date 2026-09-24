@@ -41,7 +41,7 @@ function MyPatients() {
           </p>
           <button
             onClick={() => navigate("/doctor/access-requests")}
-            className="mt-4 px-4 py-2 bg-green-600 text-white text-sm rounded-xl hover:bg-green-700 transition"
+            className="mt-4 px-4 py-2 bg-green-700 text-white text-sm rounded-xl hover:bg-green-800 transition"
           >
             Submit Access Request
           </button>
@@ -56,7 +56,7 @@ function MyPatients() {
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-11 h-11 rounded-full bg-green-100 flex items-center justify-center">
-                  <span className="text-green-600 font-semibold">
+                  <span className="text-green-700 font-semibold">
                     {patient.name?.charAt(0).toUpperCase() || "P"}
                   </span>
                 </div>
@@ -77,7 +77,7 @@ function MyPatients() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-green-600 font-medium mt-3">
+              <p className="text-xs text-green-700 font-medium mt-3">
                 View Records →
               </p>
             </div>
@@ -89,3 +89,4 @@ function MyPatients() {
 }
 
 export default MyPatients;
+

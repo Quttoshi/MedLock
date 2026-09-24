@@ -117,11 +117,11 @@ function MCUploadReport() {
               <label htmlFor="file-input" className="cursor-pointer">
                 {file ? (
                   <div className="flex items-center justify-center gap-2">
-                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span className="text-sm font-medium text-purple-600">{file.name}</span>
+                    <span className="text-sm font-medium text-purple-700">{file.name}</span>
                     <span className="text-xs text-gray-400">
                       ({(file.size / 1024 / 1024).toFixed(2)} MB)
                     </span>
@@ -151,7 +151,7 @@ function MCUploadReport() {
 
           {/* Success */}
           {success && (
-            <div className="px-4 py-3 bg-green-50 border border-green-100 rounded-xl text-sm text-green-700">
+            <div className="px-4 py-3 bg-purple-50 border border-purple-100 rounded-xl text-sm text-purple-700">
               {success}
             </div>
           )}
@@ -160,7 +160,7 @@ function MCUploadReport() {
           <button
             onClick={handleSubmit}
             disabled={uploading}
-            className="w-full py-3 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition disabled:opacity-50"
+            className="w-full py-3 bg-purple-700 text-white rounded-xl text-sm font-medium hover:bg-purple-800 transition disabled:opacity-50"
           >
             {uploading ? "Uploading..." : "Upload Report"}
           </button>
@@ -168,7 +168,7 @@ function MCUploadReport() {
       </div>
 
       {/* Info box */}
-      <div className="mt-4 bg-purple-50 border border-purple-100 rounded-2xl p-4 text-sm text-purple-600">
+      <div className="mt-4 bg-purple-50 border border-purple-100 rounded-2xl p-4 text-sm text-purple-700">
         <p className="font-semibold text-purple-800 mb-1">What happens after upload?</p>
         <ul className="space-y-1 text-xs list-disc list-inside">
           <li>The file is encrypted using AES-256 before storage</li>
@@ -182,3 +182,5 @@ function MCUploadReport() {
 }
 
 export default MCUploadReport;
+
+

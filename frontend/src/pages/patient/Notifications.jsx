@@ -8,7 +8,7 @@ function NotificationIcon({ type }) {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
     },
     access_approved: {
-      bg: "bg-green-100", color: "text-green-600",
+      bg: "bg-blue-100", color: "text-blue-700",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     },
     access_denied: {
@@ -20,7 +20,7 @@ function NotificationIcon({ type }) {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>,
     },
     report_uploaded: {
-      bg: "bg-blue-100", color: "text-blue-600",
+      bg: "bg-blue-100", color: "text-blue-700",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>,
     },
   };
@@ -66,7 +66,7 @@ function Notifications() {
           </p>
         </div>
         {unreadCount > 0 && (
-          <button onClick={handleMarkAllAsRead} className="text-sm text-blue-600 hover:underline font-medium">
+          <button onClick={handleMarkAllAsRead} className="text-sm text-blue-700 hover:underline font-medium">
             Mark all as read
           </button>
         )}
@@ -77,7 +77,7 @@ function Notifications() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition capitalize ${filter === f ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition capitalize ${filter === f ? "bg-white text-blue-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
           >
             {f}
             {f === "unread" && unreadCount > 0 && (
@@ -128,3 +128,6 @@ function Notifications() {
 }
 
 export default Notifications;
+
+
+

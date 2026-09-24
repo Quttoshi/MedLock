@@ -6,7 +6,7 @@ import api from "../../api/axios";
 function StatusBadge({ status }) {
   const config = {
     pending: "bg-yellow-100 text-yellow-700",
-    approved: "bg-green-100 text-green-700",
+    approved: "bg-blue-100 text-blue-700",
     denied: "bg-red-100 text-red-700",
     revoked: "bg-gray-100 text-gray-600",
   };
@@ -26,8 +26,8 @@ function DoctorAvatar({ name }) {
     .map((w) => w[0])
     .join("");
   return (
-    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-      <span className="text-indigo-600 font-semibold text-sm">{initials}</span>
+    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+      <span className="text-blue-700 font-semibold text-sm">{initials}</span>
     </div>
   );
 }
@@ -86,7 +86,7 @@ function PendingCard({ request, onApprove, onDeny, actionLoading }) {
             <button
               onClick={() => onApprove(request.id)}
               disabled={isLoading}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 rounded-xl text-sm transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2.5 rounded-xl text-sm transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -270,7 +270,7 @@ function AccessRequests() {
 
   const tabs = [
     { key: "pending", label: "Pending", color: "text-yellow-600" },
-    { key: "approved", label: "Approved", color: "text-green-600" },
+    { key: "approved", label: "Approved", color: "text-blue-700" },
     { key: "denied", label: "Denied", color: "text-red-600" },
     { key: "revoked", label: "Revoked", color: "text-gray-500" },
   ];
@@ -278,7 +278,7 @@ function AccessRequests() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <svg className="animate-spin h-8 w-8 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
         </svg>
@@ -291,7 +291,7 @@ function AccessRequests() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-medium text-white transition-all ${toast.type === "error" ? "bg-red-500" : "bg-green-500"}`}>
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-medium text-white transition-all ${toast.type === "error" ? "bg-red-500" : "bg-blue-500"}`}>
           {toast.message}
         </div>
       )}
@@ -379,3 +379,5 @@ function AccessRequests() {
 }
 
 export default AccessRequests;
+
+

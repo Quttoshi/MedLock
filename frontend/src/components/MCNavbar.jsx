@@ -12,10 +12,10 @@ function MCNavbar({ onMenuClick }) {
   const recent = notifications.slice(0, 5);
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center px-4 md:px-6 gap-4 sticky top-0 z-10">
+    <header className="app-topbar flex items-center px-4 md:px-6 gap-4 sticky top-0 z-10">
       <button
         onClick={onMenuClick}
-        className="lg:hidden text-gray-500 hover:text-gray-700 transition"
+        className="lg:hidden text-slate-500 hover:text-slate-800 transition"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -23,9 +23,9 @@ function MCNavbar({ onMenuClick }) {
       </button>
 
       <div className="flex-1">
-        <h2 className="text-base font-semibold text-gray-700">
+        <h2 className="text-base font-semibold text-slate-700">
           Welcome back,{" "}
-          <span className="text-purple-600">
+          <span className="text-purple-700">
             {user?.name?.split(" ")[0] || "Medical Center"}
           </span>
         </h2>
@@ -35,7 +35,7 @@ function MCNavbar({ onMenuClick }) {
       <div className="relative">
         <button
           onClick={() => setOpen(!open)}
-          className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition text-gray-500"
+          className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 transition text-slate-500"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -49,11 +49,11 @@ function MCNavbar({ onMenuClick }) {
         </button>
 
         {open && (
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <p className="text-sm font-semibold text-gray-700">Notifications</p>
               {unreadCount > 0 && (
-                <button onClick={markAllAsRead} className="text-xs text-purple-600 hover:underline">
+                <button onClick={markAllAsRead} className="text-xs text-purple-700 hover:underline">
                   Mark all read
                 </button>
               )}
@@ -72,7 +72,7 @@ function MCNavbar({ onMenuClick }) {
             </div>
             <button
               onClick={() => { setOpen(false); navigate("/mc/notifications"); }}
-              className="w-full text-center text-xs text-purple-600 font-medium py-3 hover:bg-purple-50 transition border-t border-gray-100"
+              className="w-full text-center text-xs text-purple-700 font-medium py-3 hover:bg-purple-50 transition border-t border-gray-100"
             >
               View all notifications →
             </button>
@@ -80,8 +80,8 @@ function MCNavbar({ onMenuClick }) {
         )}
       </div>
 
-      <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center">
-        <span className="text-purple-600 font-semibold text-sm">
+      <div className="w-9 h-9 rounded-full bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center">
+        <span className="text-purple-700 font-semibold text-sm">
           {user?.name?.charAt(0).toUpperCase() || "M"}
         </span>
       </div>
@@ -90,3 +90,6 @@ function MCNavbar({ onMenuClick }) {
 }
 
 export default MCNavbar;
+
+
+

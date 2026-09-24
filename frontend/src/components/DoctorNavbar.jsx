@@ -30,10 +30,10 @@ function DoctorNavbar({ onMenuClick }) {
   }, []);
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center px-4 md:px-6 gap-4 sticky top-0 z-10">
+    <header className="app-topbar flex items-center px-4 md:px-6 gap-4 sticky top-0 z-10">
       <button
         onClick={onMenuClick}
-        className="lg:hidden text-gray-500 hover:text-gray-700 transition"
+        className="lg:hidden text-slate-500 hover:text-slate-800 transition"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -41,9 +41,9 @@ function DoctorNavbar({ onMenuClick }) {
       </button>
 
       <div className="flex-1">
-        <h2 className="text-base font-semibold text-gray-700">
+        <h2 className="text-base font-semibold text-slate-700">
           Welcome back,{" "}
-          <span className="text-green-600">
+          <span className="text-green-700">
             {user?.name?.split(" ")[0] || "Doctor"}
           </span>
         </h2>
@@ -54,7 +54,7 @@ function DoctorNavbar({ onMenuClick }) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen((prev) => !prev)}
-            className="relative p-2 rounded-xl hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition"
+            className="relative p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -69,7 +69,7 @@ function DoctorNavbar({ onMenuClick }) {
 
           {/* Dropdown */}
           {dropdownOpen && (
-            <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+            <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                 <p className="text-sm font-semibold text-gray-800">
                   Notifications
@@ -82,7 +82,7 @@ function DoctorNavbar({ onMenuClick }) {
                 {unreadCount > 0 && (
                   <button
                     onClick={() => { markAllAsRead(); setDropdownOpen(false); }}
-                    className="text-xs text-green-600 hover:underline font-medium"
+                    className="text-xs text-green-700 hover:underline font-medium"
                   >
                     Mark all read
                   </button>
@@ -118,7 +118,7 @@ function DoctorNavbar({ onMenuClick }) {
               <div className="border-t border-gray-100 px-4 py-3">
                 <button
                   onClick={() => { setDropdownOpen(false); navigate("/doctor/notifications"); }}
-                  className="w-full text-center text-sm text-green-600 hover:underline font-medium"
+                  className="w-full text-center text-sm text-green-700 hover:underline font-medium"
                 >
                   View all notifications →
                 </button>
@@ -128,8 +128,8 @@ function DoctorNavbar({ onMenuClick }) {
         </div>
 
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
-          <span className="text-green-600 font-semibold text-sm">
+        <div className="w-9 h-9 rounded-full bg-green-50 ring-1 ring-green-100 flex items-center justify-center">
+          <span className="text-green-700 font-semibold text-sm">
             {user?.name?.charAt(0).toUpperCase() || "D"}
           </span>
         </div>
@@ -139,3 +139,5 @@ function DoctorNavbar({ onMenuClick }) {
 }
 
 export default DoctorNavbar;
+
+

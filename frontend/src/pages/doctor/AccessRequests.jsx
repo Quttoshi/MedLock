@@ -66,7 +66,7 @@ function DoctorAccessRequests() {
         </div>
         <button
           onClick={() => { setShowForm(true); setError(""); setSuccess(""); setForm({ patient_email: "", reason: "" }); }}
-          className="px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition"
+          className="px-4 py-2.5 bg-green-700 text-white text-sm font-medium rounded-xl hover:bg-green-800 transition"
         >
           + New Request
         </button>
@@ -87,7 +87,7 @@ function DoctorAccessRequests() {
             onClick={() => setFilter(f)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition
               ${filter === f
-                ? "bg-green-600 text-white shadow-sm"
+                ? "bg-green-700 text-white shadow-sm"
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               }`}
           >
@@ -191,7 +191,7 @@ function DoctorAccessRequests() {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-green-700 text-white rounded-xl text-sm font-medium hover:bg-green-800 transition disabled:opacity-50"
               >
                 {submitting ? "Submitting..." : "Submit Request"}
               </button>
@@ -204,3 +204,4 @@ function DoctorAccessRequests() {
 }
 
 export default DoctorAccessRequests;
+

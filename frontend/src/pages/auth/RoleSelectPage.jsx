@@ -49,15 +49,15 @@ function RoleSelectPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-10">
+    <div className="auth-shell min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-2xl">
 
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-teal-500 rounded-2xl mb-4 shadow-lg shadow-blue-100">
             <span className="text-white text-2xl font-bold">M</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">Join MedLock</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Join MedLock</h1>
           <p className="text-gray-500 mt-2 text-sm">Select how you want to register</p>
         </div>
 
@@ -67,7 +67,7 @@ function RoleSelectPage() {
             <button
               key={role.key}
               onClick={() => navigate(`/register/${role.key}`)}
-              className={`group w-full text-left bg-white border-2 rounded-2xl p-5 transition-all duration-200 shadow-sm ${role.color}`}
+              className={`group w-full text-left bg-white border-2 rounded-2xl p-5 transition-all duration-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 ${role.color}`}
             >
               <div className="flex items-center gap-4">
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${role.iconBg}`}>
@@ -104,3 +104,5 @@ function RoleSelectPage() {
 }
 
 export default RoleSelectPage;
+
+

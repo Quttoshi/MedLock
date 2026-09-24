@@ -72,15 +72,14 @@ function AdminSidebar({ isOpen, onClose }) {
         />
       )}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl z-30 flex flex-col transition-transform duration-300
+        className={`app-sidebar fixed top-0 left-0 h-full w-64 z-30 flex flex-col transition-transform duration-300
           ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:static lg:z-auto`}
       >
-        {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
-          <div className="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-lg">M</span>
+          <div className="w-9 h-9 bg-gradient-to-br from-gray-600 to-gray-400 ring-1 ring-gray-500 rounded-xl flex items-center justify-center">
+            <span className="text-gray-900 font-bold text-lg">M</span>
           </div>
-          <span className="text-xl font-bold text-gray-800">MedLock</span>
+          <span className="text-xl font-bold text-gray-900">MedLock</span>
           <button onClick={onClose} className="ml-auto lg:hidden text-gray-400 hover:text-gray-600">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -88,11 +87,10 @@ function AdminSidebar({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* User Info */}
         <div className="px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-              <span className="text-red-600 font-semibold text-sm">
+            <div className="w-10 h-10 rounded-full bg-gray-100 ring-1 ring-gray-200 flex items-center justify-center">
+              <span className="text-gray-700 font-semibold text-sm">
                 {user?.name?.charAt(0).toUpperCase() || "A"}
               </span>
             </div>
@@ -100,12 +98,11 @@ function AdminSidebar({ isOpen, onClose }) {
               <p className="text-sm font-semibold text-gray-800 truncate max-w-[130px]">
                 {user?.name || "Admin"}
               </p>
-              <p className="text-xs text-red-600 capitalize font-medium">System Admin</p>
+              <p className="text-xs text-gray-600 capitalize font-medium">System Admin</p>
             </div>
           </div>
         </div>
 
-        {/* Nav Links */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
@@ -115,8 +112,8 @@ function AdminSidebar({ isOpen, onClose }) {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2.5 rounded-xl mb-1 text-sm font-medium transition-all
                 ${isActive
-                  ? "bg-red-600 text-white shadow-md shadow-red-200"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-gray-500 text-white shadow-md shadow-gray-300"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-950"
                 }`
               }
             >
@@ -126,7 +123,6 @@ function AdminSidebar({ isOpen, onClose }) {
           ))}
         </nav>
 
-        {/* Logout */}
         <div className="px-3 py-4 border-t border-gray-100">
           <button
             onClick={handleLogout}

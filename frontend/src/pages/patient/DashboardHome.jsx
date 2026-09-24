@@ -8,19 +8,19 @@ const quickActions = [
     label: "Upload Report",
     description: "Upload a new medical record",
     path: "/patient/upload",
-    color: "bg-blue-600 hover:bg-blue-700",
+    color: "bg-blue-700 hover:bg-blue-800",
   },
   {
     label: "View Reports",
     description: "Browse all your medical records",
     path: "/patient/reports",
-    color: "bg-indigo-600 hover:bg-indigo-700",
+    color: "bg-blue-700 hover:bg-blue-800",
   },
   {
     label: "Access Requests",
     description: "Manage doctor access requests",
     path: "/patient/access-requests",
-    color: "bg-violet-600 hover:bg-violet-700",
+    color: "bg-blue-700 hover:bg-blue-800",
   },
 ];
 
@@ -49,7 +49,7 @@ function DashboardHome() {
     {
       label: "Total Reports",
       value: totalReports,
-      color: "bg-blue-50 text-blue-600",
+      color: "bg-blue-50 text-blue-700",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -71,7 +71,7 @@ function DashboardHome() {
     {
       label: "Approved Requests",
       value: approvedCount,
-      color: "bg-green-50 text-green-600",
+      color: "bg-blue-50 text-blue-700",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -82,7 +82,7 @@ function DashboardHome() {
     {
       label: "Blockchain Verified",
       value: 0,
-      color: "bg-purple-50 text-purple-600",
+      color: "bg-blue-50 text-blue-700",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -149,7 +149,7 @@ function DashboardHome() {
                       flex gap-4 items-start">
         <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center 
                         justify-center flex-shrink-0">
-          <svg className="w-5 h-5 text-blue-600" fill="none"
+          <svg className="w-5 h-5 text-blue-700" fill="none"
             stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 
@@ -160,7 +160,7 @@ function DashboardHome() {
           <p className="text-sm font-semibold text-blue-800">
             Your data is protected
           </p>
-          <p className="text-sm text-blue-600 mt-0.5">
+          <p className="text-sm text-blue-700 mt-0.5">
             All your medical records are encrypted with AES-256 and every 
             access event is permanently recorded on the Ethereum blockchain.
             Only you can approve who sees your records.
@@ -172,3 +172,5 @@ function DashboardHome() {
 }
 
 export default DashboardHome;
+
+

@@ -134,7 +134,7 @@ function Affiliation() {
         <button
           onClick={handleSubmit}
           disabled={submitting || !selected || alreadyRequested()}
-          className="w-full py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition disabled:opacity-50"
+          className="w-full py-2.5 bg-green-700 text-white text-sm font-medium rounded-xl hover:bg-green-800 transition disabled:opacity-50"
         >
           {submitting ? "Sending..." : alreadyRequested() ? "Already Requested" : "Send Affiliation Request"}
         </button>
@@ -173,3 +173,5 @@ function Affiliation() {
 }
 
 export default Affiliation;
+
+

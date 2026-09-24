@@ -45,8 +45,8 @@ function ComingSoon({ role }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-4">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center max-w-md">
-        <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
           </svg>
         </div>
@@ -143,4 +143,5 @@ function App() {
 }
 
 export default App;
+
 

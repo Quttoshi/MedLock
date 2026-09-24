@@ -6,7 +6,7 @@ import api from "../../api/axios";
 // ── Status Badge ─────────────────────────────────────
 function VerificationBadge({ status }) {
   const styles = {
-    verified: "bg-green-100 text-green-700",
+    verified: "bg-blue-100 text-blue-700",
     tampered: "bg-red-100 text-red-700",
     pending: "bg-yellow-100 text-yellow-700",
   };
@@ -124,7 +124,7 @@ function MyReports() {
         </div>
         <button
           onClick={() => navigate("/patient/upload")}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm 
+          className="bg-blue-700 hover:bg-blue-800 text-white text-sm 
                      font-semibold px-4 py-2.5 rounded-xl transition 
                      flex items-center gap-2"
         >
@@ -181,7 +181,7 @@ function MyReports() {
                     <button
                       onClick={() => handleApprove(report.id)}
                       disabled={!!actionLoading}
-                      className="px-3 py-1.5 text-xs rounded-lg bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-50"
+                      className="px-3 py-1.5 text-xs rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition disabled:opacity-50"
                     >
                       {actionLoading === report.id + "_approve" ? "..." : "Approve"}
                     </button>
@@ -319,3 +319,5 @@ function MyReports() {
 }
 
 export default MyReports;
+
+
