@@ -3,16 +3,16 @@ import { useAuth } from "../../context/AuthContext";
 import { getAdminAuditLogs } from "../../api/admin";
 
 const actionColors = {
-  login: "bg-blue-100 text-blue-700",
+  login: "bg-green-100 text-green-700",
   logout: "bg-gray-100 text-gray-600",
   report_upload: "bg-green-100 text-green-700",
   mc_report_upload: "bg-green-100 text-green-700",
-  access_approved: "bg-purple-100 text-purple-700",
+  access_approved: "bg-green-100 text-green-700",
   access_denied: "bg-red-100 text-red-700",
   access_revoked: "bg-orange-100 text-orange-700",
   medical_center_approved: "bg-teal-100 text-teal-700",
   medical_center_rejected: "bg-red-100 text-red-700",
-  doctor_verified: "bg-indigo-100 text-indigo-700",
+  doctor_verified: "bg-green-100 text-green-700",
   doctor_unverified: "bg-yellow-100 text-yellow-700",
   register: "bg-cyan-100 text-cyan-700",
 };
@@ -60,7 +60,7 @@ function AuditLogs() {
             onClick={() => setAction(a)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition
               ${action === a
-                ? "bg-red-600 text-white shadow-sm"
+                ? "bg-gray-500 text-white shadow-sm"
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               }`}
           >
@@ -131,3 +131,5 @@ function AuditLogs() {
 }
 
 export default AuditLogs;
+
+

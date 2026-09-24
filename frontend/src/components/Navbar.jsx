@@ -7,10 +7,10 @@ import { useNotifications } from "../context/NotificationContext";
 function NotifIcon({ type }) {
   const colors = {
     access_request: "bg-yellow-100 text-yellow-600",
-    access_approved: "bg-green-100 text-green-600",
+    access_approved: "bg-blue-100 text-blue-700",
     access_denied: "bg-red-100 text-red-600",
-    upload_confirmed: "bg-blue-100 text-blue-600",
-    mc_upload: "bg-purple-100 text-purple-600",
+    upload_confirmed: "bg-blue-100 text-blue-700",
+    mc_upload: "bg-blue-100 text-blue-700",
     access_revoked: "bg-gray-100 text-gray-600",
   };
   return (
@@ -50,12 +50,12 @@ function Navbar({ onMenuClick }) {
   }, []);
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center px-4 md:px-6 gap-4 sticky top-0 z-10">
+    <header className="app-topbar flex items-center px-4 md:px-6 gap-4 sticky top-0 z-10">
 
       {/* Hamburger */}
       <button
         onClick={onMenuClick}
-        className="lg:hidden text-gray-500 hover:text-gray-700 transition"
+        className="lg:hidden text-slate-500 hover:text-slate-800 transition"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -64,9 +64,9 @@ function Navbar({ onMenuClick }) {
 
       {/* Page title */}
       <div className="flex-1">
-        <h2 className="text-base font-semibold text-gray-700">
+        <h2 className="text-base font-semibold text-slate-700">
           Welcome back,{" "}
-          <span className="text-blue-600">
+          <span className="text-blue-700">
             {user?.name?.split(" ")[0] || "User"}
           </span>
         </h2>
@@ -79,7 +79,7 @@ function Navbar({ onMenuClick }) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen((prev) => !prev)}
-            className="relative p-2 rounded-xl hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition"
+            className="relative p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -93,7 +93,7 @@ function Navbar({ onMenuClick }) {
 
           {/* Dropdown */}
           {dropdownOpen && (
-            <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+            <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden">
 
               {/* Dropdown Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -111,7 +111,7 @@ function Navbar({ onMenuClick }) {
                       markAllAsRead();
                       setDropdownOpen(false);
                     }}
-                    className="text-xs text-blue-600 hover:underline font-medium"
+                    className="text-xs text-blue-700 hover:underline font-medium"
                   >
                     Mark all read
                   </button>
@@ -158,7 +158,7 @@ function Navbar({ onMenuClick }) {
                     setDropdownOpen(false);
                     navigate("/patient/notifications");
                   }}
-                  className="w-full text-center text-sm text-blue-600 hover:underline font-medium"
+                  className="w-full text-center text-sm text-blue-700 hover:underline font-medium"
                 >
                   View all notifications →
                 </button>
@@ -168,8 +168,8 @@ function Navbar({ onMenuClick }) {
         </div>
 
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center cursor-pointer">
-          <span className="text-blue-600 font-semibold text-sm">
+        <div className="w-9 h-9 rounded-full bg-blue-50 ring-1 ring-blue-100 flex items-center justify-center cursor-pointer">
+          <span className="text-blue-700 font-semibold text-sm">
             {user?.name?.charAt(0).toUpperCase() || "U"}
           </span>
         </div>
@@ -179,3 +179,6 @@ function Navbar({ onMenuClick }) {
 }
 
 export default Navbar;
+
+
+

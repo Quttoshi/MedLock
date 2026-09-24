@@ -10,7 +10,7 @@ function BlockchainBadge({ logs }) {
   const pending = logs.some((l) => l.status === "pending");
 
   if (confirmed) return (
-    <span className="text-sm font-semibold px-3 py-1.5 rounded-full border bg-green-100 text-green-700 border-green-200">
+    <span className="text-sm font-semibold px-3 py-1.5 rounded-full border bg-blue-100 text-blue-700 border-blue-200">
       ✓ Blockchain Verified
     </span>
   );
@@ -105,7 +105,7 @@ function ReportDetail() {
     return (
       <div className="max-w-4xl mx-auto text-center py-24">
         <p className="text-gray-400 font-medium text-lg">Report not found.</p>
-        <button onClick={() => navigate("/patient/reports")} className="mt-4 text-blue-600 hover:underline text-sm">
+        <button onClick={() => navigate("/patient/reports")} className="mt-4 text-blue-700 hover:underline text-sm">
           Back to Reports
         </button>
       </div>
@@ -164,7 +164,7 @@ function ReportDetail() {
             <BlockchainBadge logs={blockchainLogs} />
             <button
               onClick={handleDownload}
-              className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition"
+              className="flex items-center gap-1.5 text-sm text-blue-700 hover:text-blue-800 font-medium transition"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -194,7 +194,7 @@ function ReportDetail() {
             {blockchainLogs.map((log) => (
               <div key={log.id} className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-xl px-4 py-2">
                 <span className="capitalize font-medium">{log.event_type?.replace("_", " ")}</span>
-                <span className={`font-semibold ${log.status === "confirmed" ? "text-green-600" : "text-yellow-600"}`}>
+                <span className={`font-semibold ${log.status === "confirmed" ? "text-blue-700" : "text-yellow-600"}`}>
                   {log.status}
                 </span>
                 {log.transaction_hash && (
@@ -219,7 +219,7 @@ function ReportDetail() {
                         shadow-sm p-6 mb-5">
           <h2 className="text-base font-semibold text-gray-700 mb-4
                          flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-500" fill="none"
+            <svg className="w-5 h-5 text-blue-500" fill="none"
               stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round"
                 strokeWidth={2}
@@ -323,3 +323,6 @@ function ReportDetail() {
 }
 
 export default ReportDetail;
+
+
+

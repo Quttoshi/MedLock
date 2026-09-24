@@ -78,17 +78,17 @@ function LoginPage() {
 
   // ── Render ───────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 
+    <div className="auth-shell min-h-screen 
                     flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 border border-white/70">
 
         {/* Logo + Title */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 
-                          bg-blue-600 rounded-2xl mb-4">
+                          bg-gradient-to-br from-blue-600 to-teal-500 rounded-2xl mb-4 shadow-lg shadow-blue-100">
             <span className="text-white text-2xl font-bold">M</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">MedLock</h1>
+          <h1 className="text-3xl font-bold text-slate-900">MedLock</h1>
           <p className="text-gray-500 mt-1 text-sm">
             Sign in to your account
           </p>
@@ -199,3 +199,6 @@ function LoginPage() {
 }
 
 export default LoginPage;
+
+
+

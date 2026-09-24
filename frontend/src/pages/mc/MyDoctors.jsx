@@ -96,7 +96,7 @@ function MCMyDoctors() {
                       <button
                         onClick={() => handleApprove(req.id)}
                         disabled={actionLoading === req.id}
-                        className="flex-1 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+                        className="flex-1 py-1.5 bg-purple-700 text-white text-xs font-medium rounded-lg hover:bg-purple-800 transition disabled:opacity-50"
                       >
                         Approve
                       </button>
@@ -124,7 +124,7 @@ function MCMyDoctors() {
             onClick={() => setFilter(f)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition
               ${filter === f
-                ? "bg-purple-600 text-white shadow-sm"
+                ? "bg-purple-700 text-white shadow-sm"
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               }`}
           >
@@ -157,7 +157,7 @@ function MCMyDoctors() {
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-11 h-11 rounded-full bg-purple-100 flex items-center justify-center">
-                  <span className="text-purple-600 font-semibold">
+                  <span className="text-purple-700 font-semibold">
                     {doctor.name?.charAt(0).toUpperCase() || "D"}
                   </span>
                 </div>
@@ -185,7 +185,7 @@ function MCMyDoctors() {
               <div className="mt-4">
                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
                   ${doctor.is_verified
-                    ? "bg-green-100 text-green-700"
+                    ? "bg-purple-100 text-purple-700"
                     : "bg-yellow-100 text-yellow-700"
                   }`}>
                   {doctor.is_verified ? "✓ Verified" : "Pending Verification"}
@@ -200,3 +200,5 @@ function MCMyDoctors() {
 }
 
 export default MCMyDoctors;
+
+

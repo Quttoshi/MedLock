@@ -115,7 +115,7 @@ function ReportViewer() {
         <p className="text-gray-400 font-medium text-lg">Report not found.</p>
         <button
           onClick={() => navigate(`/doctor/patients/${patientId}/reports`)}
-          className="mt-4 text-green-600 hover:underline text-sm"
+          className="mt-4 text-green-700 hover:underline text-sm"
         >
           Back to Reports
         </button>
@@ -156,7 +156,7 @@ function ReportViewer() {
           <button
             onClick={handleDownload}
             disabled={downloading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 bg-green-700 text-white text-sm font-medium rounded-xl hover:bg-green-800 transition disabled:opacity-50"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -270,7 +270,7 @@ function ReportViewer() {
             <button
               onClick={handleDownload}
               disabled={downloading}
-              className="px-4 py-2 bg-green-600 text-white text-sm rounded-xl hover:bg-green-700 transition disabled:opacity-50"
+              className="px-4 py-2 bg-green-700 text-white text-sm rounded-xl hover:bg-green-800 transition disabled:opacity-50"
             >
               {downloading ? "Downloading..." : "Download to View"}
             </button>
@@ -280,13 +280,13 @@ function ReportViewer() {
 
       {/* Security Notice */}
       <div className="mt-4 bg-green-50 border border-green-100 rounded-2xl p-4 flex gap-3 items-start">
-        <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 text-green-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
         <div>
           <p className="text-sm font-semibold text-green-800">Encrypted Access</p>
-          <p className="text-xs text-green-600 mt-0.5">
+          <p className="text-xs text-green-700 mt-0.5">
             This report was decrypted on-the-fly using the patient's encryption key.
             Your access to this record is logged on the Ethereum blockchain and
             can be revoked by the patient at any time.
@@ -299,3 +299,4 @@ function ReportViewer() {
 }
 
 export default ReportViewer;
+

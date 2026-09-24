@@ -75,15 +75,15 @@ function MCSidebar({ isOpen, onClose }) {
         />
       )}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl z-30 flex flex-col transition-transform duration-300
+        className={`app-sidebar fixed top-0 left-0 h-full w-64 z-30 flex flex-col transition-transform duration-300
           ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:static lg:z-auto`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
-          <div className="w-9 h-9 bg-purple-600 rounded-xl flex items-center justify-center">
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
+          <div className="w-9 h-9 bg-gradient-to-br from-purple-700 to-violet-700 rounded-xl flex items-center justify-center">
             <span className="text-white font-bold text-lg">M</span>
           </div>
-          <span className="text-xl font-bold text-gray-800">MedLock</span>
+          <span className="text-xl font-bold text-slate-900">MedLock</span>
           <button
             onClick={onClose}
             className="ml-auto lg:hidden text-gray-400 hover:text-gray-600"
@@ -95,10 +95,10 @@ function MCSidebar({ isOpen, onClose }) {
         </div>
 
         {/* User Info */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-              <span className="text-purple-600 font-semibold text-sm">
+            <div className="w-10 h-10 rounded-full bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center">
+              <span className="text-purple-700 font-semibold text-sm">
                 {user?.name?.charAt(0).toUpperCase() || "M"}
               </span>
             </div>
@@ -106,7 +106,7 @@ function MCSidebar({ isOpen, onClose }) {
               <p className="text-sm font-semibold text-gray-800 truncate max-w-[130px]">
                 {user?.name || "Medical Center"}
               </p>
-              <p className="text-xs text-purple-600 font-medium">Medical Center</p>
+              <p className="text-xs text-purple-700 font-medium">Medical Center</p>
             </div>
           </div>
         </div>
@@ -121,8 +121,8 @@ function MCSidebar({ isOpen, onClose }) {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2.5 rounded-xl mb-1 text-sm font-medium transition-all
                 ${isActive
-                  ? "bg-purple-600 text-white shadow-md shadow-purple-200"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-purple-700 text-white shadow-md shadow-purple-300"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
                 }`
               }
             >
@@ -138,7 +138,7 @@ function MCSidebar({ isOpen, onClose }) {
         </nav>
 
         {/* Logout */}
-        <div className="px-3 py-4 border-t border-gray-100">
+        <div className="px-3 py-4 border-t border-slate-100">
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition"
@@ -156,3 +156,6 @@ function MCSidebar({ isOpen, onClose }) {
 }
 
 export default MCSidebar;
+
+
+

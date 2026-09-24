@@ -86,8 +86,8 @@ function PatientReports() {
                   <td className="px-5 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
                       ${report.upload_source === "patient"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-purple-100 text-purple-700"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-green-100 text-green-700"
                       }`}>
                       {report.upload_source === "patient" ? "Patient" : "Medical Center"}
                     </span>
@@ -95,7 +95,7 @@ function PatientReports() {
                   <td className="px-5 py-4">
                     <button
   onClick={() => navigate(`/doctor/patients/${patientId}/reports/${report.id}/view`)}
-  className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition"
+  className="px-3 py-1.5 bg-green-700 text-white text-xs rounded-lg hover:bg-green-800 transition"
 >
   View
 </button>
@@ -111,3 +111,4 @@ function PatientReports() {
 }
 
 export default PatientReports;
+

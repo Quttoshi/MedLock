@@ -47,7 +47,7 @@ function Doctors() {
             onClick={() => setFilter(f)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition
               ${filter === f
-                ? "bg-red-600 text-white shadow-sm"
+                ? "bg-gray-500 text-white shadow-sm"
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               }`}
           >
@@ -119,3 +119,5 @@ function Doctors() {
 }
 
 export default Doctors;
+
+

@@ -33,7 +33,7 @@ function MCDashboardHome() {
     {
       label: "Total Doctors",
       value: stats.totalDoctors,
-      color: "bg-purple-50 text-purple-600",
+      color: "bg-purple-50 text-purple-700",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -44,7 +44,7 @@ function MCDashboardHome() {
     {
       label: "Verified Doctors",
       value: stats.verifiedDoctors,
-      color: "bg-green-50 text-green-600",
+      color: "bg-purple-50 text-purple-700",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -55,7 +55,7 @@ function MCDashboardHome() {
     {
       label: "Reports Uploaded",
       value: stats.totalReports,
-      color: "bg-blue-50 text-blue-600",
+      color: "bg-purple-50 text-purple-700",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -81,19 +81,19 @@ function MCDashboardHome() {
       label: "Upload Report",
       description: "Upload a diagnostic report for a patient",
       path: "/mc/upload",
-      color: "bg-purple-600 hover:bg-purple-700",
+      color: "bg-purple-700 hover:bg-purple-800",
     },
     {
       label: "My Reports",
       description: "View all reports uploaded by your center",
       path: "/mc/reports",
-      color: "bg-indigo-600 hover:bg-indigo-700",
+      color: "bg-purple-700 hover:bg-purple-800",
     },
     {
       label: "My Doctors",
       description: "View doctors registered under your center",
       path: "/mc/doctors",
-      color: "bg-violet-600 hover:bg-violet-700",
+      color: "bg-purple-700 hover:bg-purple-800",
     },
   ];
 
@@ -146,14 +146,14 @@ function MCDashboardHome() {
       {/* Notice */}
       <div className="bg-purple-50 border border-purple-100 rounded-2xl p-5 flex gap-4 items-start">
         <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-          <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div>
           <p className="text-sm font-semibold text-purple-800">Patient consent required</p>
-          <p className="text-sm text-purple-600 mt-0.5">
+          <p className="text-sm text-purple-700 mt-0.5">
             All reports uploaded by your center require explicit patient approval
             before they are added to the patient's medical record. Every upload
             is encrypted with AES-256 and logged on the Ethereum blockchain.
@@ -165,3 +165,5 @@ function MCDashboardHome() {
 }
 
 export default MCDashboardHome;
+
+

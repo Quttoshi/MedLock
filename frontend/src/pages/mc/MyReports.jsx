@@ -38,7 +38,7 @@ function MCMyReports() {
             onClick={() => setFilter(f)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition
               ${filter === f
-                ? "bg-purple-600 text-white shadow-sm"
+                ? "bg-purple-700 text-white shadow-sm"
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               }`}
           >
@@ -83,7 +83,7 @@ function MCMyReports() {
                   <td className="px-5 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
                       ${report.is_approved
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-purple-100 text-purple-700"
                         : "bg-yellow-100 text-yellow-700"
                       }`}>
                       {report.is_approved ? "Approved" : "Pending Approval"}
@@ -100,3 +100,5 @@ function MCMyReports() {
 }
 
 export default MCMyReports;
+
+

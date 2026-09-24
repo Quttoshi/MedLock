@@ -35,7 +35,7 @@ function DoctorDashboardHome() {
     {
       label: "Approved Patients",
       value: stats.totalPatients,
-      color: "bg-green-50 text-green-600",
+      color: "bg-green-50 text-green-700",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -57,7 +57,7 @@ function DoctorDashboardHome() {
     {
       label: "Approved Requests",
       value: stats.approvedRequests,
-      color: "bg-blue-50 text-blue-600",
+      color: "bg-green-50 text-green-700",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -83,13 +83,19 @@ function DoctorDashboardHome() {
       label: "My Patients",
       description: "View patients who approved your access",
       path: "/doctor/patients",
-      color: "bg-green-600 hover:bg-green-700",
+      color: "bg-green-700 hover:bg-green-800",
     },
     {
       label: "Access Requests",
       description: "Submit or track access requests",
       path: "/doctor/access-requests",
-      color: "bg-indigo-600 hover:bg-indigo-700",
+      color: "bg-green-700 hover:bg-green-800",
+    },
+    {
+      label: "Affiliation",
+      description: "Manage your medical center affiliation",
+      path: "/doctor/affiliation",
+      color: "bg-green-700 hover:bg-green-800",
     },
   ];
 
@@ -177,14 +183,14 @@ function DoctorDashboardHome() {
       {/* Info Notice */}
       <div className="bg-green-50 border border-green-100 rounded-2xl p-5 flex gap-4 items-start">
         <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div>
           <p className="text-sm font-semibold text-green-800">Patient consent required</p>
-          <p className="text-sm text-green-600 mt-0.5">
+          <p className="text-sm text-green-700 mt-0.5">
             You can only access patient records after submitting an access request
             and receiving explicit approval from the patient. All access events are
             permanently recorded on the Ethereum blockchain.
@@ -196,3 +202,5 @@ function DoctorDashboardHome() {
 }
 
 export default DoctorDashboardHome;
+
+

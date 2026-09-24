@@ -3,10 +3,10 @@ import { useAuth } from "../../context/AuthContext";
 import { getAdminUsers } from "../../api/admin";
 
 const roleBadge = {
-  patient: "bg-blue-100 text-blue-700",
+  patient: "bg-green-100 text-green-700",
   doctor: "bg-green-100 text-green-700",
-  medical_center: "bg-purple-100 text-purple-700",
-  admin: "bg-red-100 text-red-700",
+  medical_center: "bg-green-100 text-green-700",
+  admin: "bg-gray-100 text-gray-700",
 };
 
 function Users() {
@@ -44,7 +44,7 @@ function Users() {
             onClick={() => setFilter(f.value)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition
               ${filter === f.value
-                ? "bg-red-600 text-white shadow-sm"
+                ? "bg-gray-500 text-white shadow-sm"
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               }`}
           >
@@ -92,3 +92,5 @@ function Users() {
 }
 
 export default Users;
+
+
