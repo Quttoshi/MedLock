@@ -1,6 +1,7 @@
 import io
 import logging
 import re
+from dataclasses import dataclass, field
 
 import cv2
 import docx2txt
@@ -9,6 +10,7 @@ import pdfplumber
 import pytesseract
 from pdf2image import convert_from_bytes
 from PIL import Image, ImageEnhance, ImageOps
+from pytesseract import Output
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -18,7 +20,26 @@ from app.models.medical_report import MedicalReport
 pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
 _poppler_path = settings.POPPLER_PATH or None
 logger = logging.getLogger(__name__)
-PARSER_VERSION = "medical-ocr-v2"
+PARSER_VERSION = "medical-ocr-v3"
+
+# A digital PDF page with at least this many non-space characters has a usable text layer,
+# so re-running OCR on it would not beat the embedded text.
+MIN_TEXT_LAYER_CHARS_PER_PAGE = 100
+# Values whose OCR confidence (0-100) falls below this are flagged for manual review.
+REVIEW_CONFIDENCE = 60.0
+# Stop trying preprocessing variants once one reaches this mean word confidence.
+EARLY_STOP_CONFIDENCE = 85.0
+# Page detection runs on a downscaled copy of the photo for speed.
+PAGE_DETECT_MAX_SIDE = 1000
+MIN_PAGE_AREA_RATIO = 0.3
+# Corner offsets below this fraction of the image size mean the page is already flat.
+FLAT_PAGE_TOLERANCE = 0.02
+DESKEW_MAX_ANGLE = 10.0
+DESKEW_MIN_ANGLE = 0.3
+# The best deskew angle must sharpen the row profile by this factor over no rotation.
+DESKEW_MIN_GAIN = 1.05
+# Tesseract orientation confidence is ~10 on normal pages; below this the guess is unreliable.
+OSD_MIN_CONFIDENCE = 2.0
 
 NORMAL_RANGES = {
     "hemoglobin":   (12.0, 17.5),
@@ -29,7 +50,7 @@ NORMAL_RANGES = {
     "wbc":          (4.0, 11.0),
     "rbc":          (4.2, 5.9),
     "platelets":    (150.0, 400.0),
-    "sodium":       (136.0, 145.0),
+    "sodium":       (135.0, 146.0),
     "potassium":    (3.5, 5.0),
     "tsh":          (0.4, 4.0),
     "iron":         (60.0, 170.0),
@@ -50,7 +71,6 @@ NORMAL_RANGES = {
     "ph":           (7.35, 7.45),
     "pco2":         (35.0, 45.0),
     "po2":          (83.0, 108.0),
-    "sodium":       (135.0, 146.0),
     "calcium":      (1.15, 1.29),
     "chloride":     (95.0, 105.0),
     "lactate":      (0.5, 1.6),
@@ -257,15 +277,16 @@ _SECTION_HEADERS = {
 
 # ── pdfplumber: extract tables from digital PDFs ──────────────────────────────
 
-def _extract_from_pdf_tables(file_bytes: bytes) -> tuple[str, list[dict]]:
+def _extract_from_pdf_tables(file_bytes: bytes) -> tuple[str, list[dict], int]:
     """
     Use pdfplumber to extract tables directly from the PDF text layer.
-    Returns (full_text, structured_data).
+    Returns (full_text, structured_data, page_count).
     """
     full_text_parts = []
     structured = []
 
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        page_count = len(pdf.pages)
         for page in pdf.pages:
             # Get plain text for the extracted_text field
             page_text = page.extract_text() or ""
@@ -313,7 +334,12 @@ def _extract_from_pdf_tables(file_bytes: bytes) -> tuple[str, list[dict]]:
 
                     structured.append(_result_item(test_name, value, unit, status_from_pdf))
 
-    return "\n".join(full_text_parts), structured
+    return "\n".join(full_text_parts), structured, page_count
+
+
+def _has_text_layer(text: str, page_count: int) -> bool:
+    non_space_chars = len(re.sub(r"\s", "", text or ""))
+    return non_space_chars >= MIN_TEXT_LAYER_CHARS_PER_PAGE * max(page_count, 1)
 
 
 def _determine_status(
@@ -508,7 +534,28 @@ def _result_item(
         item["reference_text"] = reference_text.strip()
     if source_text:
         item["source_text"] = source_text.strip()
+    if reference_range and _looks_like_decimal_misread(value, reference_range):
+        _mark_for_review(item, "possible_decimal_misread")
     return item
+
+
+def _looks_like_decimal_misread(value: float, reference_range: tuple[float, float]) -> bool:
+    """OCR often drops or shifts a decimal point (4.1 -> 41). Flag out-of-range values that land
+    inside the report's own range once the point moves one place, so genuine extreme results
+    (e.g. CRP 150 against 0 - 5) are not flagged."""
+    low, high = reference_range
+    # One-sided (<= 200) or zero-based (0 - 5) ranges contain almost any value divided by 10,
+    # so the check only means something for bounded ranges with a positive lower limit.
+    if low <= 0 or high == float("inf") or low <= value <= high:
+        return False
+    return any(low <= value * shift <= high for shift in (0.1, 10.0))
+
+
+def _mark_for_review(item: dict, reason: str) -> None:
+    item["needs_review"] = True
+    reasons = item.setdefault("review_reasons", [])
+    if reason not in reasons:
+        reasons.append(reason)
 
 
 def _flag_source(status_from_text: str | None, reference_range: tuple[float, float] | None) -> str:
@@ -584,16 +631,229 @@ def _preprocess_image(image: Image.Image) -> np.ndarray:
     return binary
 
 
-def _ocr_image_to_text(image: Image.Image) -> str:
-    variants = _image_ocr_variants(image)
-    scored = []
-    for name, variant, config in variants:
-        text = pytesseract.image_to_string(variant, lang="eng", config=config)
-        scored.append((_score_ocr_text(text), name, text))
+@dataclass
+class OcrText:
+    """OCR output plus per-line confidence, keyed by the normalized line the parser sees."""
+    text: str
+    line_confidence: dict[str, float] = field(default_factory=dict)
+    mean_confidence: float = 0.0
 
-    scored.sort(reverse=True, key=lambda item: item[0])
-    logger.debug("Selected OCR variant %s with score %s", scored[0][1], scored[0][0])
-    return scored[0][2]
+
+# ── Geometry correction: flatten, orient and deskew before OCR ────────────────
+
+def _straighten_image(image: Image.Image, allow_perspective: bool) -> Image.Image:
+    """Flatten a photographed page, fix 90/180-degree rotation, then remove small tilt."""
+    image = image.convert("RGB")
+    if allow_perspective:
+        image = _flatten_page(image)
+    image = _correct_orientation(image)
+    return _deskew(image)
+
+
+def _flatten_page(image: Image.Image) -> Image.Image:
+    rgb = np.array(image)
+    quad = _find_page_quad(rgb)
+    if quad is None or _is_flat(quad, rgb.shape[1], rgb.shape[0]):
+        return image
+    tl, tr, br, bl = quad
+    width = int(max(np.linalg.norm(br - bl), np.linalg.norm(tr - tl)))
+    height = int(max(np.linalg.norm(tr - br), np.linalg.norm(tl - bl)))
+    target = np.float32([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]])
+    matrix = cv2.getPerspectiveTransform(quad, target)
+    flat = cv2.warpPerspective(rgb, matrix, (width, height), flags=cv2.INTER_CUBIC)
+    logger.debug("Flattened page from perspective to %sx%s", width, height)
+    return Image.fromarray(flat)
+
+
+def _find_page_quad(rgb: np.ndarray) -> np.ndarray | None:
+    """Find the four corners of the page, assuming it is brighter than the background."""
+    h, w = rgb.shape[:2]
+    scale = min(1.0, PAGE_DETECT_MAX_SIDE / max(h, w))
+    small = cv2.resize(rgb, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    gray = cv2.GaussianBlur(cv2.cvtColor(small, cv2.COLOR_RGB2GRAY), (5, 5), 0)
+    _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # Close the dark text strokes so the page becomes one solid region.
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+    page = max(contours, key=cv2.contourArea)
+    if cv2.contourArea(page) < MIN_PAGE_AREA_RATIO * small.shape[0] * small.shape[1]:
+        return None
+    quad = cv2.approxPolyDP(page, 0.02 * cv2.arcLength(page, True), True)
+    if len(quad) != 4 or not cv2.isContourConvex(quad):
+        return None
+    return _order_corners(quad.reshape(4, 2).astype(np.float32) / scale)
+
+
+def _order_corners(points: np.ndarray) -> np.ndarray:
+    """Return corners as top-left, top-right, bottom-right, bottom-left."""
+    sums = points.sum(axis=1)
+    diffs = np.diff(points, axis=1).ravel()  # y - x
+    return np.array(
+        [points[np.argmin(sums)], points[np.argmin(diffs)], points[np.argmax(sums)], points[np.argmax(diffs)]],
+        dtype=np.float32,
+    )
+
+
+def _is_flat(quad: np.ndarray, width: int, height: int) -> bool:
+    """True when the page is already an upright rectangle, so warping would only crop margins."""
+    x, y, w, h = cv2.boundingRect(quad.astype(np.int32))
+    box = np.float32([[x, y], [x + w, y], [x + w, y + h], [x, y + h]])
+    return float(np.abs(quad - box).max()) < FLAT_PAGE_TOLERANCE * max(width, height)
+
+
+def _correct_orientation(image: Image.Image) -> Image.Image:
+    try:
+        osd = pytesseract.image_to_osd(image, output_type=Output.DICT)
+    except pytesseract.TesseractError:
+        # OSD fails on pages with too little text; keep the image as-is.
+        return image
+    rotate = int(osd.get("rotate", 0)) % 360
+    if rotate and float(osd.get("orientation_conf", 0)) >= OSD_MIN_CONFIDENCE:
+        logger.debug("Correcting page orientation by %s degrees", rotate)
+        # Tesseract reports clockwise degrees; PIL rotates counter-clockwise.
+        return image.rotate(-rotate, expand=True, fillcolor="white")
+    return image
+
+
+def _deskew(image: Image.Image) -> Image.Image:
+    angle = _estimate_skew(np.array(image.convert("L")))
+    if abs(angle) < DESKEW_MIN_ANGLE:
+        return image
+    logger.debug("Deskewing page by %.2f degrees", angle)
+    return Image.fromarray(_rotate_bound(np.array(image), angle))
+
+
+def _estimate_skew(gray: np.ndarray) -> float:
+    """Find the rotation that makes text rows most horizontal (sharpest row-projection profile)."""
+    scale = min(1.0, PAGE_DETECT_MAX_SIDE / max(gray.shape))
+    small = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    _, ink = cv2.threshold(small, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    h, w = ink.shape
+    center = (w / 2, h / 2)
+
+    def profile_sharpness(angle: float) -> float:
+        matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+        rotated = cv2.warpAffine(ink, matrix, (w, h), flags=cv2.INTER_NEAREST, borderValue=0)
+        rows = rotated.sum(axis=1, dtype=np.float64)
+        return float(np.sum(np.diff(rows) ** 2))
+
+    if not ink.any():
+        return 0.0
+    coarse = max(np.arange(-DESKEW_MAX_ANGLE, DESKEW_MAX_ANGLE + 0.5, 0.5), key=profile_sharpness)
+    fine = float(max(np.arange(coarse - 0.5, coarse + 0.55, 0.1), key=profile_sharpness))
+    # With too little text every angle scores about the same; only rotate when it clearly helps.
+    if profile_sharpness(fine) <= profile_sharpness(0.0) * DESKEW_MIN_GAIN:
+        return 0.0
+    return float(np.clip(fine, -DESKEW_MAX_ANGLE, DESKEW_MAX_ANGLE))
+
+
+def _rotate_bound(img: np.ndarray, angle: float) -> np.ndarray:
+    """Rotate counter-clockwise by `angle` degrees, growing the canvas so no content is cut off."""
+    h, w = img.shape[:2]
+    matrix = cv2.getRotationMatrix2D((w / 2, h / 2), angle, 1.0)
+    cos, sin = abs(matrix[0, 0]), abs(matrix[0, 1])
+    new_w, new_h = int(h * sin + w * cos), int(h * cos + w * sin)
+    matrix[0, 2] += new_w / 2 - w / 2
+    matrix[1, 2] += new_h / 2 - h / 2
+    return cv2.warpAffine(img, matrix, (new_w, new_h), flags=cv2.INTER_CUBIC, borderValue=(255, 255, 255))
+
+
+# ── Word-position OCR: rebuild table rows and keep confidence ─────────────────
+
+def _ocr_image(image: Image.Image, allow_perspective: bool) -> OcrText:
+    """Straighten the page, OCR each preprocessing variant, and keep the best-scoring result."""
+    image = _straighten_image(image, allow_perspective)
+    best: tuple[float, str, OcrText] | None = None
+    for name, variant, config in _image_ocr_variants(image):
+        data = pytesseract.image_to_data(variant, lang="eng", config=config, output_type=Output.DICT)
+        words = _words_from_data(data)
+        # Tesseract's own line grouping and geometric row grouping come from the same OCR pass,
+        # so trying both costs no extra OCR time.
+        for grouping, lines in (("lines", _group_tesseract_lines(words)), ("rows", _group_rows(words))):
+            candidate = _ocr_text_from_lines(lines, words)
+            score = _score_candidate(candidate)
+            if best is None or score > best[0]:
+                best = (score, f"{name}-{grouping}", candidate)
+        if best and best[2].mean_confidence >= EARLY_STOP_CONFIDENCE:
+            break
+
+    if best is None:
+        return OcrText(text="")
+    logger.debug("Selected OCR variant %s with score %.1f", best[1], best[0])
+    return best[2]
+
+
+def _words_from_data(data: dict) -> list[dict]:
+    words = []
+    for i, text in enumerate(data["text"]):
+        confidence = float(data["conf"][i])
+        if not text.strip() or confidence < 0:
+            continue
+        words.append({
+            "text": text.strip(),
+            "conf": confidence,
+            "left": data["left"][i],
+            "top": data["top"][i],
+            "height": data["height"][i],
+            "line_key": (data["block_num"][i], data["par_num"][i], data["line_num"][i]),
+        })
+    return words
+
+
+def _group_tesseract_lines(words: list[dict]) -> list[list[dict]]:
+    lines: dict[tuple, list[dict]] = {}
+    for word in words:
+        lines.setdefault(word["line_key"], []).append(word)
+    return [sorted(line, key=lambda w: w["left"]) for line in lines.values()]
+
+
+def _group_rows(words: list[dict]) -> list[list[dict]]:
+    """Group words whose vertical centres align, so a table row stays on one line
+    even when Tesseract splits its columns into separate blocks."""
+    if not words:
+        return []
+    tolerance = 0.6 * float(np.median([w["height"] for w in words]))
+    rows: list[dict] = []
+    for word in sorted(words, key=lambda w: w["top"] + w["height"] / 2):
+        center = word["top"] + word["height"] / 2
+        if rows and abs(center - rows[-1]["center"]) <= tolerance:
+            row = rows[-1]
+            row["words"].append(word)
+            row["center"] += (center - row["center"]) / len(row["words"])
+        else:
+            rows.append({"center": center, "words": [word]})
+    return [sorted(row["words"], key=lambda w: w["left"]) for row in rows]
+
+
+def _ocr_text_from_lines(lines: list[list[dict]], words: list[dict]) -> OcrText:
+    text_lines = []
+    line_confidence = {}
+    for line in lines:
+        line_text = " ".join(w["text"] for w in line)
+        text_lines.append(line_text)
+        # A row is only as trustworthy as its least-confident number.
+        numeric = [w["conf"] for w in line if re.search(r"\d", w["text"])]
+        line_confidence[_normalize_ocr_line(line_text)] = min(numeric or [w["conf"] for w in line])
+    mean_confidence = float(np.mean([w["conf"] for w in words])) if words else 0.0
+    return OcrText("\n".join(text_lines), line_confidence, mean_confidence)
+
+
+def _score_candidate(candidate: OcrText) -> float:
+    """Prefer text that yields more parsed results, then cleaner text and higher confidence."""
+    parsed = len(_parse_structured_from_text(candidate.text))
+    return parsed * 25 + _score_ocr_text(candidate.text) + candidate.mean_confidence
+
+
+def _attach_ocr_confidence(structured_data: list[dict], line_confidence: dict[str, float]) -> None:
+    for item in structured_data:
+        confidence = line_confidence.get(item.get("source_text", ""))
+        if confidence is None:
+            continue
+        item["ocr_confidence"] = round(confidence, 1)
+        if confidence < REVIEW_CONFIDENCE:
+            _mark_for_review(item, "low_ocr_confidence")
 
 
 def _image_ocr_variants(image: Image.Image) -> list[tuple[str, Image.Image | np.ndarray, str]]:
@@ -629,39 +889,22 @@ def _score_ocr_text(text: str) -> int:
     return keyword_score + numeric_score + decimal_bonus - noise_penalty - impossible_penalty
 
 
-def _extract_text_tesseract_pdf(file_bytes: bytes) -> str:
+def _extract_text_tesseract_pdf(file_bytes: bytes) -> OcrText:
     images = convert_from_bytes(file_bytes, dpi=300, poppler_path=_poppler_path)
-    texts = []
-    for image in images:
-        texts.append(_ocr_image_to_text(image))
-    return "\n".join(texts)
+    # Scanned pages are already flat, so only orientation and tilt are corrected.
+    pages = [_ocr_image(image, allow_perspective=False) for image in images]
+    line_confidence = {}
+    for page in pages:
+        line_confidence.update(page.line_confidence)
+    mean_confidence = float(np.mean([p.mean_confidence for p in pages])) if pages else 0.0
+    return OcrText("\n".join(p.text for p in pages), line_confidence, mean_confidence)
 
 
-def _extract_text_from_image(file_bytes: bytes) -> str:
+def _extract_text_from_image(file_bytes: bytes) -> OcrText:
     image = Image.open(io.BytesIO(file_bytes))
-    return _ocr_image_to_text(image)
-
-
-def _parse_structured_from_text(text: str) -> list[dict]:
-    """Regex fallback parser for Tesseract text output."""
-    pattern = re.compile(
-        r"^([A-Za-z][A-Za-z\s\-/]{1,25}?)\s{2,}(\d+\.?\d*)\s*([a-zA-Z/%µ³]+)?",
-        re.MULTILINE,
-    )
-    results = []
-    for match in pattern.finditer(text):
-        name = match.group(1).strip()
-        if any(kw in name.lower() for kw in _SKIP_KEYWORDS):
-            continue
-        value = float(match.group(2))
-        unit = match.group(3) or ""
-        status = _determine_status(name, value, None)
-        results.append({"test": name.title(), "value": value, "unit": unit, "status": status})
-    return results
-
-
-def _detect_abnormal(structured_data: list[dict]) -> list[dict]:
-    return [item for item in structured_data if item.get("status") in ("high", "low")]
+    # Phone cameras store rotation in EXIF instead of rotating the pixels.
+    image = ImageOps.exif_transpose(image)
+    return _ocr_image(image, allow_perspective=True)
 
 
 def _parse_structured_from_text(text: str) -> list[dict]:
@@ -822,26 +1065,30 @@ def run_ocr(report: MedicalReport, file_bytes: bytes, db: Session) -> OcrResult:
     try:
         if ext == "pdf":
             engine = "pdfplumber"
-            text, structured_data = _extract_from_pdf_tables(file_bytes)
+            text, structured_data, page_count = _extract_from_pdf_tables(file_bytes)
             if text and not structured_data:
                 structured_data = _parse_structured_from_text(text)
 
-            # If the PDF has no useful text layer or parser output, fall back to OCR.
-            if not structured_data:
+            # Only scanned PDFs need OCR. When a real text layer exists, OCR cannot beat it,
+            # so an empty result means the parser failed, not the text extraction.
+            if not structured_data and not _has_text_layer(text, page_count):
                 engine = "pdfplumber+tesseract"
-                ocr_text = _extract_text_tesseract_pdf(file_bytes)
-                ocr_structured = _parse_structured_from_text(ocr_text)
+                ocr = _extract_text_tesseract_pdf(file_bytes)
+                ocr_structured = _parse_structured_from_text(ocr.text)
+                _attach_ocr_confidence(ocr_structured, ocr.line_confidence)
                 if ocr_structured or not text:
-                    text = ocr_text
+                    text = ocr.text
                     structured_data = ocr_structured
         elif ext in ("docx", "doc"):
             engine = "docx2txt"
             text, structured_data = _extract_from_docx(file_bytes)
         else:
-            # Images: JPEG, PNG
+            # Images: JPEG, PNG, TIFF
             engine = "tesseract"
-            text = _extract_text_from_image(file_bytes)
+            ocr = _extract_text_from_image(file_bytes)
+            text = ocr.text
             structured_data = _parse_structured_from_text(text)
+            _attach_ocr_confidence(structured_data, ocr.line_confidence)
 
         if structured_data:
             status = "completed"
