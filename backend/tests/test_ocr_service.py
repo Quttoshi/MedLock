@@ -1,8 +1,17 @@
+import cv2
+import numpy as np
 import pytest
 from app.services.ocr_service import (
+    _attach_ocr_confidence,
     _determine_status,
     _detect_abnormal,
+    _estimate_skew,
+    _group_rows,
+    _has_text_layer,
+    _is_flat,
+    _order_corners,
     _parse_structured_from_text,
+    _rotate_bound,
     NORMAL_RANGES,
 )
 
@@ -205,3 +214,100 @@ class TestStructuredTextParser:
         assert by_name["Total Bilirubin"]["unit"] == "mg/dL"
         assert by_name["Delta Bilirubin"]["flag_source"] == "report_reference_range"
         assert by_name["Delta Bilirubin"]["source_text"] == "Delta Bilirubin 0.20 mg/dL 0.0 - 0.2"
+
+
+def _word(text, left, top, conf=90.0, height=20, line_key=(1, 1, 1)):
+    return {"text": text, "conf": conf, "left": left, "top": top, "height": height, "line_key": line_key}
+
+
+class TestReviewFlags:
+    def test_dropped_decimal_point_needs_review(self):
+        # "4.1" misread as "41" against the report's own 3.5 - 5.2 range
+        result = _parse_structured_from_text("Albumin 41 g/dL 3.5 - 5.2")
+        assert result[0]["needs_review"] is True
+        assert "possible_decimal_misread" in result[0]["review_reasons"]
+
+    def test_genuine_extreme_value_is_not_flagged_as_misread(self):
+        result = _parse_structured_from_text("Glucose 600 mg/dL 70 - 100")
+        assert result[0]["status"] == "high"
+        assert "needs_review" not in result[0]
+
+    def test_zero_based_and_one_sided_ranges_are_not_flagged_as_misread(self):
+        crp = _parse_structured_from_text("Direct LDL 30 mg/dL 0 - 5")
+        cholesterol = _parse_structured_from_text("Cholesterol 250 mg/dL <= 200")
+        assert "needs_review" not in crp[0]
+        assert "needs_review" not in cholesterol[0]
+
+    def test_plausible_abnormal_value_is_not_flagged(self):
+        result = _parse_structured_from_text("Creatinine 1.9 mg/dL 0.6 - 1.2")
+        assert result[0]["status"] == "high"
+        assert "needs_review" not in result[0]
+
+    def test_low_ocr_confidence_needs_review(self):
+        items = [{"test": "Potassium", "value": 3.0, "source_text": "Potassium 3.0 mmol/L"}]
+        _attach_ocr_confidence(items, {"Potassium 3.0 mmol/L": 32.0})
+        assert items[0]["ocr_confidence"] == 32.0
+        assert items[0]["review_reasons"] == ["low_ocr_confidence"]
+
+    def test_high_ocr_confidence_is_not_flagged(self):
+        items = [{"test": "Urea", "value": 35.0, "source_text": "Urea 35 mg/dL"}]
+        _attach_ocr_confidence(items, {"Urea 35 mg/dL": 94.0})
+        assert items[0]["ocr_confidence"] == 94.0
+        assert "needs_review" not in items[0]
+
+
+class TestTextLayer:
+    def test_digital_pdf_text_layer_is_detected(self):
+        assert _has_text_layer("Hemoglobin 13.5 g/dL 12.0 - 17.5\n" * 10, page_count=1)
+
+    def test_scanned_pdf_has_no_text_layer(self):
+        assert not _has_text_layer("", page_count=2)
+        assert not _has_text_layer("  \n ", page_count=1)
+
+
+class TestRowGrouping:
+    def test_columns_split_by_tesseract_are_rejoined_into_one_row(self):
+        words = [
+            _word("Hemoglobin", 100, 200, line_key=(1, 1, 1)),
+            _word("10.8", 700, 203, line_key=(2, 1, 1)),
+            _word("g/dL", 980, 199, line_key=(3, 1, 1)),
+            _word("Urea", 100, 310, line_key=(1, 1, 2)),
+            _word("35", 700, 312, line_key=(2, 1, 2)),
+        ]
+        rows = _group_rows(words)
+        assert [[w["text"] for w in row] for row in rows] == [["Hemoglobin", "10.8", "g/dL"], ["Urea", "35"]]
+
+    def test_words_in_a_row_are_ordered_left_to_right(self):
+        rows = _group_rows([_word("mg/dL", 900, 100), _word("Urea", 100, 100), _word("35", 600, 101)])
+        assert [w["text"] for w in rows[0]] == ["Urea", "35", "mg/dL"]
+
+
+class TestGeometry:
+    def test_corners_are_ordered_clockwise_from_top_left(self):
+        shuffled = np.float32([[900, 1200], [50, 40], [80, 1150], [950, 60]])
+        ordered = _order_corners(shuffled)
+        assert ordered.tolist() == [[50, 40], [950, 60], [900, 1200], [80, 1150]]
+
+    def test_upright_page_is_flat(self):
+        quad = np.float32([[0, 0], [999, 0], [999, 1399], [0, 1399]])
+        assert _is_flat(quad, 1000, 1400)
+
+    def test_perspective_page_is_not_flat(self):
+        quad = np.float32([[150, 100], [900, 180], [820, 1300], [60, 1220]])
+        assert not _is_flat(quad, 1000, 1400)
+
+    def test_skew_angle_is_recovered(self):
+        page = np.full((1400, 1000), 255, np.uint8)
+        for y in range(150, 1300, 60):
+            cv2.rectangle(page, (100, y), (900, y + 18), 0, -1)
+        tilted = _rotate_bound(page, 4.0)
+        # Deskewing rotates back by the estimated angle, so it should be about -4 degrees.
+        assert _estimate_skew(tilted) == pytest.approx(-4.0, abs=0.3)
+
+    def test_blank_page_is_not_rotated(self):
+        assert _estimate_skew(np.full((1400, 1000), 255, np.uint8)) == 0.0
+
+    def test_page_with_a_single_word_is_not_rotated(self):
+        page = np.full((1400, 1000), 255, np.uint8)
+        cv2.rectangle(page, (200, 200), (320, 230), 0, -1)
+        assert _estimate_skew(page) == 0.0
