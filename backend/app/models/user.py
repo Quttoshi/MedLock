@@ -16,6 +16,8 @@ class User(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
     role = Column(SAEnum("patient", "doctor", "medical_center", "admin", name="user_role"), nullable=False)
+    # Set when the user clicks the confirmation link; None means the address is unconfirmed.
+    email_verified_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

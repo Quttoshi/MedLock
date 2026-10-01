@@ -10,3 +10,4 @@ from app.models.access_request import AccessRequest
 from app.models.affiliation_request import AffiliationRequest
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification
+from app.models.revoked_token import RevokedToken

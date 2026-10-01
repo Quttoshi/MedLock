@@ -14,6 +14,7 @@ from app.models.admin import Admin
 from app.models.audit_log import AuditLog
 from app.schemas.admin import UserListItem, DoctorListItem, MedicalCenterListItem, AuditLogItem
 from app.services.audit_service import log_action
+from app.services.notification_service import create_notification
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -179,6 +180,10 @@ def approve_medical_center(
 
     log_action(db, action="medical_center_approved", performed_by=current_user.id,
                entity_type="medical_center", entity_id=center.id, request=request)
+    create_notification(
+        db, center.user_id, "medical_center_approved",
+        f"Your medical center '{center.name}' has been approved. You can now use MedLock.",
+    )
 
     return MedicalCenterListItem(
         id=center.id,
@@ -213,6 +218,10 @@ def reject_medical_center(
     log_action(db, action="medical_center_rejected", performed_by=current_user.id,
                entity_type="medical_center", entity_id=center.id,
                details={"reason": reason}, request=request)
+    create_notification(
+        db, center.user_id, "medical_center_rejected",
+        f"Your medical center registration for '{center.name}' was rejected. Reason: {reason}",
+    )
 
     return MedicalCenterListItem(
         id=center.id,

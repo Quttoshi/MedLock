@@ -10,35 +10,51 @@ function MCMyDoctors() {
   const [affiliations, setAffiliations] = useState([]);
   const [actionLoading, setActionLoading] = useState(null);
   const [rejectReason, setRejectReason] = useState({});
+  const [licenseInput, setLicenseInput] = useState({});
+  const [actionError, setActionError] = useState({});
 
   const fetchAffiliations = () =>
     getAffiliationRequests(token, "pending")
       .then((res) => setAffiliations(res.data))
       .catch(() => setAffiliations([]));
 
+  const fetchDoctors = () =>
+    getMCDoctors(token)
+      .then((res) => setDoctors(res.data))
+      .catch(() => setDoctors([]));
+
   const handleApprove = async (id) => {
     setActionLoading(id);
+    setActionError({ ...actionError, [id]: null });
     try {
-      await approveAffiliation(token, id);
-      await fetchAffiliations();
-    } catch {}
+      await approveAffiliation(token, id, licenseInput[id] || "");
+      await Promise.all([fetchAffiliations(), fetchDoctors()]);
+    } catch (err) {
+      setActionError({
+        ...actionError,
+        [id]: err.response?.data?.detail || "Could not approve this request.",
+      });
+    }
     setActionLoading(null);
   };
 
   const handleReject = async (id) => {
     setActionLoading(id);
+    setActionError({ ...actionError, [id]: null });
     try {
       await rejectAffiliation(token, id, rejectReason[id] || "");
       await fetchAffiliations();
-    } catch {}
+    } catch (err) {
+      setActionError({
+        ...actionError,
+        [id]: err.response?.data?.detail || "Could not reject this request.",
+      });
+    }
     setActionLoading(null);
   };
 
   useEffect(() => {
-    getMCDoctors(token)
-      .then((res) => setDoctors(res.data))
-      .catch(() => setDoctors([]))
-      .finally(() => setLoading(false));
+    fetchDoctors().finally(() => setLoading(false));
     fetchAffiliations();
   }, [token]);
 
@@ -77,14 +93,16 @@ function MCMyDoctors() {
                           {req.specialization}
                         </span>
                       )}
-                      {req.license_number && (
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg font-mono">
-                          {req.license_number}
-                        </span>
-                      )}
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 min-w-[180px]">
+                  <div className="flex flex-col gap-2 min-w-[220px]">
+                    <input
+                      type="text"
+                      placeholder="License number from their credential"
+                      value={licenseInput[req.id] || ""}
+                      onChange={(e) => setLicenseInput({ ...licenseInput, [req.id]: e.target.value })}
+                      className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    />
                     <input
                       type="text"
                       placeholder="Rejection reason (optional)"
@@ -95,10 +113,11 @@ function MCMyDoctors() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleApprove(req.id)}
-                        disabled={actionLoading === req.id}
+                        disabled={actionLoading === req.id || !(licenseInput[req.id] || "").trim()}
+                        title="Enter the license number to verify and approve"
                         className="flex-1 py-1.5 bg-purple-700 text-white text-xs font-medium rounded-lg hover:bg-purple-800 transition disabled:opacity-50"
                       >
-                        Approve
+                        Verify & Approve
                       </button>
                       <button
                         onClick={() => handleReject(req.id)}
@@ -108,6 +127,9 @@ function MCMyDoctors() {
                         Reject
                       </button>
                     </div>
+                    {actionError[req.id] && (
+                      <p className="text-xs text-red-600">{actionError[req.id]}</p>
+                    )}
                   </div>
                 </div>
               </div>

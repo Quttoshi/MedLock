@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { downloadReport, getPatientReports } from "../../api/doctor";
+import { downloadReport, getPatientReports, verifyReport } from "../../api/doctor";
+import IntegrityCheck from "../../components/IntegrityCheck";
 
 function ReportViewer() {
   const { token } = useAuth();
@@ -195,6 +196,15 @@ function ReportViewer() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Integrity Card */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
+        <h2 className="text-base font-semibold text-gray-700 mb-1">File Integrity</h2>
+        <p className="text-xs text-gray-500">
+          Confirms the stored file matches the hash recorded on the blockchain when it was uploaded.
+        </p>
+        <IntegrityCheck verify={() => verifyReport(token, patientId, reportId)} />
       </div>
 
       {/* Preview Card */}

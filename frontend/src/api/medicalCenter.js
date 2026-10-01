@@ -13,8 +13,13 @@ export const getMCReports = (token) =>
 export const getAffiliationRequests = (token, status) =>
   api.get(`/mc/affiliation-requests${status ? `?status_filter=${status}` : ""}`, { headers: getHeaders(token) });
 
-export const approveAffiliation = (token, requestId) =>
-  api.patch(`/mc/affiliation-requests/${requestId}/approve`, {}, { headers: getHeaders(token) });
+// licenseNumber is read from the doctor's credential and must match the one they registered with
+export const approveAffiliation = (token, requestId, licenseNumber) =>
+  api.patch(
+    `/mc/affiliation-requests/${requestId}/approve`,
+    { license_number: licenseNumber },
+    { headers: getHeaders(token) }
+  );
 
 export const rejectAffiliation = (token, requestId, reason) =>
   api.patch(`/mc/affiliation-requests/${requestId}/reject`, { reason }, { headers: getHeaders(token) });

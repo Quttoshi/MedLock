@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import api from "../../api/axios";
+import PasswordInput from "../../components/PasswordInput";
 
 const ROLE_ENDPOINTS = {
   patient: "/auth/register",
@@ -9,10 +10,11 @@ const ROLE_ENDPOINTS = {
 };
 
 function Field({ label, name, type = "text", placeholder, value, onChange, error }) {
+  const Input = type === "password" ? PasswordInput : "input";
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <input
+      <Input
         type={type}
         name={name}
         value={value}
@@ -122,8 +124,14 @@ function RegisterPage() {
 
     setLoading(true);
     try {
-      await api.post(ROLE_ENDPOINTS[role], payload);
-      navigate("/login", { state: { registered: true } });
+      const res = await api.post(ROLE_ENDPOINTS[role], payload);
+      navigate("/login", {
+        state: {
+          registered: true,
+          verifyEmail: res.data.email_verification_required,
+          email: payload.email,
+        },
+      });
     } catch (err) {
       if (err.response?.status === 409 || err.response?.status === 400) {
         const detail = err.response?.data?.detail;
@@ -260,8 +268,7 @@ function RegisterPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Confirm Password
             </label>
-            <input
-              type="password"
+            <PasswordInput
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}

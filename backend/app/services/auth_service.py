@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -19,6 +20,10 @@ from app.schemas.auth import (
     LoginRequest,
 )
 from app.config import settings
+from app.services.email_verification_service import is_verification_required, is_verified
+from app.services.notification_service import notify_admins
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -154,6 +159,15 @@ def register_medical_center(data: MedicalCenterRegisterRequest, db: Session) -> 
     db.add(center)
     db.commit()
     db.refresh(user)
+
+    try:
+        notify_admins(
+            db,
+            "medical_center_registered",
+            f"New medical center '{data.center_name}' (license {data.license_number}) registered and is awaiting approval.",
+        )
+    except Exception:
+        logger.exception("Could not notify admins about medical center registration %s", center.id)
     return user
 
 
@@ -200,6 +214,15 @@ def login_user(data: LoginRequest, db: Session) -> dict:
         )
 
     _clear_failed_attempts(data.email)
+
+    if is_verification_required() and not is_verified(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "email_not_verified",
+                "message": "Please confirm your email address before logging in. Check your inbox for the confirmation link.",
+            },
+        )
 
     token = create_access_token({"sub": str(user.id), "role": user.role})
     return {"access_token": token, "token_type": "bearer", "user": user}

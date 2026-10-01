@@ -17,6 +17,12 @@ export const downloadReport = (token, patientId, reportId) =>
     responseType: "blob",
   });
 
+// Check a report against its blockchain record
+export const verifyReport = (token, patientId, reportId) =>
+  api.get(`/doctor/patients/${patientId}/reports/${reportId}/verify`, {
+    headers: getHeaders(token),
+  });
+
 // Access requests
 export const getMyAccessRequests = (token) =>
   api.get("/access-requests/my", { headers: getHeaders(token) });
