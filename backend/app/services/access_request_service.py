@@ -46,25 +46,36 @@ def create_access_request_by_email(data: AccessRequestByEmail, current_user: Use
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
 
+    # A doctor-patient pair has at most one request row (uq_doctor_patient_access).
     existing = db.query(AccessRequest).filter(
         AccessRequest.doctor_id == doctor.id,
         AccessRequest.patient_id == patient.id,
-        AccessRequest.status.in_(["pending", "approved"]),
     ).first()
-    if existing:
+    if existing and existing.status == "approved" and _is_expired(existing):
+        existing.status = "revoked"
+    if existing and existing.status in ("pending", "approved"):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"An access request for this patient is already {existing.status}",
         )
 
-    req = AccessRequest(
-        id=uuid.uuid4(),
-        doctor_id=doctor.id,
-        patient_id=patient.id,
-        reason=data.reason or "",
-        status="pending",
-    )
-    db.add(req)
+    if existing:
+        # Denied, revoked or expired before: reopen the same row as a new request.
+        req = existing
+        req.status = "pending"
+        req.reason = data.reason or ""
+        req.requested_at = datetime.now(timezone.utc)
+        req.decided_at = None
+        req.expires_at = None
+    else:
+        req = AccessRequest(
+            id=uuid.uuid4(),
+            doctor_id=doctor.id,
+            patient_id=patient.id,
+            reason=data.reason or "",
+            status="pending",
+        )
+        db.add(req)
     db.commit()
     db.refresh(req)
 
@@ -191,12 +202,16 @@ def check_doctor_has_access(doctor: Doctor, report_id: uuid.UUID, db: Session) -
     if not req:
         return False
 
-    if req.expires_at and datetime.now(timezone.utc) > req.expires_at.replace(tzinfo=timezone.utc):
+    if _is_expired(req):
         req.status = "revoked"
         db.commit()
         return False
 
     return True
+
+
+def _is_expired(req: AccessRequest) -> bool:
+    return bool(req.expires_at) and datetime.now(timezone.utc) > req.expires_at.replace(tzinfo=timezone.utc)
 
 
 def _get_patient_owned_request(request_id: str, current_user: User, db: Session) -> AccessRequest:

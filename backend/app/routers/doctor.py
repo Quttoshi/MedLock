@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 from app.services.encryption_service import decrypt_file
 from app.services.storage_service import get_supabase, BUCKET_NAME
 from app.services.access_request_service import check_doctor_has_access
+from app.services.audit_service import log_action
+from app.services.blockchain_service import verify_report_integrity
 
 router = APIRouter(prefix="/doctor", tags=["Doctor"])
 
@@ -246,3 +248,40 @@ def download_patient_report(
         media_type=content_type,
         headers={"Content-Disposition": f'attachment; filename="{report.original_filename}"'},
     )
+
+
+@router.get("/patients/{patient_id}/reports/{report_id}/verify")
+def verify_patient_report(
+    patient_id: str,
+    report_id: str,
+    request: Request = None,
+    current_user: User = Depends(require_role(["doctor"])),
+    db: Session = Depends(get_db),
+):
+    """Check a report the doctor has access to against its blockchain record."""
+    doctor = _get_doctor(current_user, db)
+
+    if not doctor.is_verified:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is not verified yet")
+
+    report = db.query(MedicalReport).filter(
+        MedicalReport.id == uuid.UUID(report_id),
+        MedicalReport.patient_id == uuid.UUID(patient_id),
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+
+    if not check_doctor_has_access(doctor, report.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this report")
+
+    result = verify_report_integrity(report, db)
+    log_action(
+        db,
+        action="integrity_verified",
+        performed_by=current_user.id,
+        entity_type="medical_report",
+        entity_id=report.id,
+        details={"status": result["status"]},
+        request=request,
+    )
+    return result

@@ -24,6 +24,11 @@ def upload_file(file_bytes: bytes, storage_path: str, content_type: str = "appli
     return storage_path
 
 
+def download_file(storage_path: str) -> bytes:
+    client = get_supabase()
+    return client.storage.from_(BUCKET_NAME).download(storage_path)
+
+
 def get_signed_url(storage_path: str, expires_in: int = 3600) -> str:
     client = get_supabase()
     result = client.storage.from_(BUCKET_NAME).create_signed_url(storage_path, expires_in)

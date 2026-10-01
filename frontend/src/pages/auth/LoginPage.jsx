@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
+import PasswordInput from "../../components/PasswordInput";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -16,8 +17,14 @@ function LoginPage() {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Set when login is refused because the email address is not confirmed yet
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resending, setResending] = useState(false);
 
   const registered = location.state?.registered;
+  const verifyEmail = location.state?.verifyEmail;
+  const registeredEmail = location.state?.email;
 
   // ── Validation ──────────────────────────────────────
   const validate = () => {
@@ -50,6 +57,8 @@ function LoginPage() {
     }
 
     setLoading(true);
+    setNeedsVerification(false);
+    setResendMessage("");
     try {
       const response = await api.post("/auth/login", formData);
       const { access_token, user } = response.data;
@@ -62,17 +71,38 @@ function LoginPage() {
       else if (user.role === "admin") navigate("/admin/dashboard");
       else navigate("/");
     } catch (err) {
+      const detail = err.response?.data?.detail;
       if (err.response?.status === 401) {
         setServerError("Invalid email or password. Please try again.");
-      } else if (err.response?.status === 423) {
+      } else if (err.response?.status === 403 && detail?.code === "email_not_verified") {
+        setNeedsVerification(true);
+        setServerError(detail.message);
+      } else if (err.response?.status === 429) {
         setServerError(
-          "Account locked due to too many failed attempts. Try again in 15 minutes."
+          typeof detail === "string"
+            ? detail
+            : "Account locked due to too many failed attempts. Try again in 15 minutes."
         );
       } else {
         setServerError("Something went wrong. Please try again later.");
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    setResendMessage("");
+    try {
+      const res = await api.post("/auth/resend-verification", {
+        email: formData.email || registeredEmail,
+      });
+      setResendMessage(res.data.message);
+    } catch (err) {
+      setResendMessage(err.response?.data?.detail || "Could not send the email. Please try again later.");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -98,7 +128,9 @@ function LoginPage() {
         {registered && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200
                           rounded-lg text-green-700 text-sm">
-            Account created successfully. Please sign in.
+            {verifyEmail
+              ? `Account created. We sent a confirmation link to ${registeredEmail || "your email"}. Click it, then sign in.`
+              : "Account created successfully. Please sign in."}
           </div>
         )}
 
@@ -107,6 +139,19 @@ function LoginPage() {
           <div className="mb-4 p-3 bg-red-50 border border-red-200 
                           rounded-lg text-red-600 text-sm">
             {serverError}
+            {needsVerification && (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="text-blue-700 font-medium hover:underline disabled:opacity-50"
+                >
+                  {resending ? "Sending..." : "Resend confirmation email"}
+                </button>
+                {resendMessage && <p className="mt-1 text-gray-600">{resendMessage}</p>}
+              </div>
+            )}
           </div>
         )}
 
@@ -142,8 +187,7 @@ function LoginPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
-            <input
-              type="password"
+            <PasswordInput
               name="password"
               value={formData.password}
               onChange={handleChange}

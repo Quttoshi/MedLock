@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -19,6 +19,9 @@ class BlockchainLog(Base):
     block_number = Column(Integer, nullable=True)
     network = Column(String, default="sepolia", nullable=False)
     status = Column(SAEnum("pending", "confirmed", "failed", name="blockchain_status_type"), default="pending", nullable=False)
+    # Send attempts so far; the row is marked failed after BLOCKCHAIN_MAX_ATTEMPTS.
+    attempts = Column(Integer, default=0, nullable=False)
+    last_error = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships

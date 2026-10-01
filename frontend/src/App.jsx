@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
 import RoleSelectPage from "./pages/auth/RoleSelectPage";
 
 // Patient
@@ -71,6 +72,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RoleSelectPage />} />
       <Route path="/register/:role" element={<RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
 
       {/* Patient */}
       <Route

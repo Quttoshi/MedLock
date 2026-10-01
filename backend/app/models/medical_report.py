@@ -26,5 +26,13 @@ class MedicalReport(Base):
     # Relationships
     patient = relationship("Patient", back_populates="medical_reports")
     medical_center = relationship("MedicalCenter", back_populates="medical_reports")
-    ocr_result = relationship("OcrResult", back_populates="medical_report", uselist=False)
-    blockchain_logs = relationship("BlockchainLog", back_populates="medical_report")
+    # Deleting a report deletes these too (the foreign keys are ON DELETE CASCADE);
+    # without this, SQLAlchemy would try to null their non-nullable report_id.
+    ocr_result = relationship(
+        "OcrResult", back_populates="medical_report", uselist=False,
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+    blockchain_logs = relationship(
+        "BlockchainLog", back_populates="medical_report",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )

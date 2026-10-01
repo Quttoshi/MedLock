@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
+import IntegrityCheck from "../../components/IntegrityCheck";
 
 function BlockchainBadge({ logs }) {
   if (!logs || logs.length === 0) return null;
@@ -197,9 +198,9 @@ function ReportDetail() {
                 <span className={`font-semibold ${log.status === "confirmed" ? "text-blue-700" : "text-yellow-600"}`}>
                   {log.status}
                 </span>
-                {log.transaction_hash && (
+                {log.explorer_url && (
                   <a
-                    href={`https://sepolia.etherscan.io/tx/${log.transaction_hash}`}
+                    href={log.explorer_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-500 hover:underline"
@@ -211,6 +212,11 @@ function ReportDetail() {
             ))}
           </div>
         )}
+        <IntegrityCheck
+          verify={() =>
+            api.get(`/reports/${id}/verify`, { headers: { Authorization: `Bearer ${token}` } })
+          }
+        />
       </div>
 
       {/* Extracted Report Data */}

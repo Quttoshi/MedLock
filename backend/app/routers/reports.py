@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import List
 
@@ -15,9 +16,18 @@ from app.schemas.report import ReportResponse
 from app.services.audit_service import log_action
 from app.services.encryption_service import decrypt_file
 from app.services.report_service import get_my_reports, upload_report
-from app.services.storage_service import get_supabase, BUCKET_NAME
-from app.services.blockchain_service import confirm_log
+from app.services.storage_service import get_supabase, BUCKET_NAME, delete_file
+from app.services.blockchain_service import (
+    confirm_log,
+    explorer_tx_url,
+    log_event as blockchain_log,
+    normalize_tx_hash,
+    verify_report_integrity,
+)
+from app.services.notification_service import create_notification
 from app.models.blockchain_log import BlockchainLog
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -165,14 +175,47 @@ def get_blockchain_logs(
             "id": str(log.id),
             "event_type": log.event_type,
             "file_hash": log.file_hash,
-            "transaction_hash": log.transaction_hash,
+            "transaction_hash": normalize_tx_hash(log.transaction_hash),
+            "explorer_url": explorer_tx_url(log.transaction_hash),
             "block_number": log.block_number,
             "network": log.network,
             "status": log.status,
+            "attempts": log.attempts,
+            "last_error": log.last_error,
             "created_at": log.created_at,
         }
         for log in logs
     ]
+
+
+@router.get("/{report_id}/verify")
+def verify_report(
+    report_id: str,
+    request: Request = None,
+    current_user: User = Depends(require_role(["patient"])),
+    db: Session = Depends(get_db),
+):
+    """Check the stored file and its blockchain record have not been tampered with."""
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
+    report = db.query(MedicalReport).filter(
+        MedicalReport.id == uuid.UUID(report_id),
+        MedicalReport.patient_id == patient.id,
+    ).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    result = verify_report_integrity(report, db)
+    log_action(
+        db,
+        action="integrity_verified",
+        performed_by=current_user.id,
+        entity_type="medical_report",
+        entity_id=report.id,
+        details={"status": result["status"]},
+        request=request,
+    )
+    return result
 
 
 @router.patch("/{report_id}/approve")
@@ -203,6 +246,11 @@ def approve_report(
         entity_id=report.id,
         request=request,
     )
+    _notify_uploading_center(
+        db, report, "report_consent_approved",
+        f"{current_user.full_name or 'The patient'} approved your report '{report.original_filename}'. "
+        "It is now part of their medical record.",
+    )
     return {"message": "Report approved"}
 
 
@@ -224,6 +272,22 @@ def reject_report(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
     if report.upload_source == "patient":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot reject a self-uploaded report")
+
+    _notify_uploading_center(
+        db, report, "report_consent_rejected",
+        f"{current_user.full_name or 'The patient'} rejected your report '{report.original_filename}'. "
+        "It was not added to their medical record and has been deleted.",
+    )
+    # The on-chain delete event outlives the report; its local log row is removed with it.
+    try:
+        blockchain_log(report.id, report.file_hash_sha256, "delete", db)
+    except Exception:
+        logger.exception("Could not log delete event for report %s", report.id)
+    try:
+        delete_file(report.file_url)
+    except Exception:
+        logger.exception("Could not delete stored file for report %s", report.id)
+
     db.delete(report)
     db.commit()
     log_action(
@@ -271,3 +335,10 @@ def confirm_blockchain_logs(
     return results
 
 
+def _notify_uploading_center(db: Session, report: MedicalReport, notification_type: str, message: str) -> None:
+    if not report.medical_center:
+        return
+    try:
+        create_notification(db, report.medical_center.user_id, notification_type, message)
+    except Exception:
+        logger.exception("Could not notify medical center about report %s", report.id)

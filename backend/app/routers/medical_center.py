@@ -201,7 +201,8 @@ def get_affiliation_requests(
             "doctor_name": r.doctor.user.full_name if r.doctor and r.doctor.user else None,
             "doctor_email": r.doctor.user.email if r.doctor and r.doctor.user else None,
             "specialization": r.doctor.specialization if r.doctor else None,
-            "license_number": r.doctor.license_number if r.doctor else None,
+            # Hidden while pending: the MC must enter it from the doctor's credential to verify them.
+            "license_number": r.doctor.license_number if r.doctor and r.status != "pending" else None,
             "reason": r.reason,
             "status": r.status,
             "rejection_reason": r.rejection_reason,
@@ -215,10 +216,13 @@ def get_affiliation_requests(
 @router.patch("/affiliation-requests/{request_id}/approve")
 def approve_affiliation(
     request_id: str,
+    body: dict = None,
     request: Request = None,
     current_user: User = Depends(require_role(["medical_center"])),
     db: Session = Depends(get_db),
 ):
+    """Approve a doctor's affiliation and verify them, after checking the license number
+    the medical center reads from the doctor's credential against the one they registered."""
     mc = _get_mc(current_user, db)
     req = db.query(AffiliationRequest).filter(
         AffiliationRequest.id == uuid.UUID(request_id),
@@ -229,14 +233,40 @@ def approve_affiliation(
     if req.status != "pending":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only pending requests can be approved")
 
+    entered_license = (body or {}).get("license_number", "")
+    if not entered_license.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Enter the doctor's license number to verify them",
+        )
+    if _normalize_license(entered_license) != _normalize_license(req.doctor.license_number):
+        log_action(
+            db, action="doctor_verification_failed", performed_by=current_user.id,
+            entity_type="doctor", entity_id=req.doctor.id, request=request,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="License number does not match the one the doctor registered with",
+        )
+
     req.status = "approved"
     req.decided_at = datetime.now(timezone.utc)
-
-    # Link the doctor to this MC
+    # Link the doctor to this MC and mark them verified
     req.doctor.medical_center_id = mc.id
+    req.doctor.is_verified = True
     db.commit()
 
-    return {"id": str(req.id), "status": req.status, "doctor_name": req.doctor.user.full_name}
+    log_action(
+        db, action="doctor_verified_by_mc", performed_by=current_user.id,
+        entity_type="doctor", entity_id=req.doctor.id,
+        details={"affiliation_request_id": str(req.id)}, request=request,
+    )
+    create_notification(
+        db, req.doctor.user_id, "affiliation_approved",
+        f"{mc.name} approved your affiliation and verified your license. You can now access patient records you are granted.",
+    )
+
+    return {"id": str(req.id), "status": req.status, "doctor_name": req.doctor.user.full_name, "is_verified": True}
 
 
 @router.patch("/affiliation-requests/{request_id}/reject")
@@ -262,7 +292,22 @@ def reject_affiliation(
     req.rejection_reason = (body or {}).get("reason", "")
     db.commit()
 
+    log_action(
+        db, action="affiliation_rejected", performed_by=current_user.id,
+        entity_type="doctor", entity_id=req.doctor.id,
+        details={"reason": req.rejection_reason}, request=request,
+    )
+    reason = f" Reason: {req.rejection_reason}" if req.rejection_reason else ""
+    create_notification(
+        db, req.doctor.user_id, "affiliation_rejected",
+        f"{mc.name} rejected your affiliation request.{reason}",
+    )
+
     return {"id": str(req.id), "status": req.status}
+
+
+def _normalize_license(license_number: str) -> str:
+    return "".join(license_number.split()).upper()
 
 
 @router.get("/reports")

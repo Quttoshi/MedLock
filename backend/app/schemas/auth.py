@@ -72,6 +72,19 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
+class RegisterResponse(UserResponse):
+    # True when the user must click the emailed link before they can log in.
+    email_verification_required: bool = False
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
