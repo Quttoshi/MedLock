@@ -92,6 +92,7 @@ def upload_report(file: UploadFile, report_type: str, current_user: User, db: Se
             recipient_id=current_user.id,
             notification_type="report_uploaded",
             message=f"Your report '{file.filename}' has been uploaded and encrypted successfully.",
+            link=f"/patient/reports/{report.id}",
         )
     except Exception:
         pass

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { searchMedicalCenters, requestAffiliation, getMyAffiliations } from "../../api/doctor";
+import DoctorVerificationCard from "../../components/DoctorVerificationCard";
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -91,6 +92,8 @@ function Affiliation() {
           Request affiliation with a medical center. They will review your license and specialization.
         </p>
       </div>
+
+      <DoctorVerificationCard token={token} />
 
       {/* Request Form */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-5">

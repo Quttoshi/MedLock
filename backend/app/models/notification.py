@@ -28,9 +28,17 @@ class Notification(Base):
         "affiliation_approved",
         "affiliation_rejected",
         "blockchain_failed",
+        "imaging_processed",
+        "imaging_processing_failed",
+        "doctor_verification_requested",
+        "doctor_verification_approved",
+        "doctor_verification_rejected",
+        "doctor_verification_revoked",
         name="notification_type"
     ), nullable=False)
     message = Column(String, nullable=False)
+    # In-app path the notification opens when clicked, e.g. /patient/reports/<id>
+    link = Column(String, nullable=True)
     is_read = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 

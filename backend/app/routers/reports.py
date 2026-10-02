@@ -25,6 +25,7 @@ from app.services.blockchain_service import (
     verify_report_integrity,
 )
 from app.services.notification_service import create_notification
+from app.services import imaging_service
 from app.models.blockchain_log import BlockchainLog
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,8 @@ def download_report(
     ).first()
     if not report:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    if imaging_service.is_imaging(report):
+        return imaging_archive_response(report)
 
     # Download encrypted bytes from Supabase Storage
     client = get_supabase()
@@ -283,10 +286,13 @@ def reject_report(
         blockchain_log(report.id, report.file_hash_sha256, "delete", db)
     except Exception:
         logger.exception("Could not log delete event for report %s", report.id)
-    try:
-        delete_file(report.file_url)
-    except Exception:
-        logger.exception("Could not delete stored file for report %s", report.id)
+    if imaging_service.is_imaging(report):
+        imaging_service.delete_study_files(report)
+    else:
+        try:
+            delete_file(report.file_url)
+        except Exception:
+            logger.exception("Could not delete stored file for report %s", report.id)
 
     db.delete(report)
     db.commit()
@@ -342,3 +348,18 @@ def _notify_uploading_center(db: Session, report: MedicalReport, notification_ty
         create_notification(db, report.medical_center.user_id, notification_type, message)
     except Exception:
         logger.exception("Could not notify medical center about report %s", report.id)
+
+
+def imaging_archive_response(report: MedicalReport) -> Response:
+    """The original DICOM files of a processed study, one folder per series."""
+    if report.imaging_study is None or report.imaging_study.processing_status != "completed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This imaging study is still being processed. Try again shortly.",
+        )
+    stem = report.original_filename.rsplit(".", 1)[0] or "study"
+    return Response(
+        content=imaging_service.build_study_archive(report),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{stem}.zip"'},
+    )

@@ -16,6 +16,7 @@ from app.models.user import User
 from app.services.audit_service import log_action
 from app.services.blockchain_service import log_event as blockchain_log
 from app.services.encryption_service import encrypt_file, sha256_hash
+from app.services.doctor_verification_service import mark_verified
 from app.services.notification_service import create_notification
 from app.services.ocr_service import run_ocr
 from app.services.storage_service import upload_file, BUCKET_NAME
@@ -159,6 +160,7 @@ def upload_report_for_patient(
             recipient_id=patient_user.id,
             notification_type="report_uploaded",
             message=f"{mc.name} has uploaded a report '{file.filename}' to your medical records.",
+            link=f"/patient/reports/{report.id}",
         )
     except Exception:
         pass
@@ -251,9 +253,9 @@ def approve_affiliation(
 
     req.status = "approved"
     req.decided_at = datetime.now(timezone.utc)
-    # Link the doctor to this MC and mark them verified
+    # Link the doctor to this MC and mark them verified by it
     req.doctor.medical_center_id = mc.id
-    req.doctor.is_verified = True
+    mark_verified(req.doctor, "medical_center", current_user, f"License checked by {mc.name}")
     db.commit()
 
     log_action(

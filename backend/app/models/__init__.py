@@ -11,3 +11,5 @@ from app.models.affiliation_request import AffiliationRequest
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification
 from app.models.revoked_token import RevokedToken
+from app.models.imaging import ImagingStudy, ImagingSeries
+from app.models.doctor_verification_request import DoctorVerificationRequest

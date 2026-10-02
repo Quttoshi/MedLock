@@ -2,12 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
+import { useOpenNotification } from "../context/useOpenNotification";
 
 function MCNavbar({ onMenuClick }) {
   const { user } = useAuth();
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const openNotification = useOpenNotification("/mc/notifications");
 
   const recent = notifications.slice(0, 5);
 
@@ -62,7 +64,14 @@ function MCNavbar({ onMenuClick }) {
               {recent.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-6">No notifications yet.</p>
               ) : recent.map((n) => (
-                <div key={n.id} className={`px-4 py-3 text-sm ${n.is_read ? "text-gray-500" : "text-gray-800 font-medium bg-purple-50"}`}>
+                <div
+                  key={n.id}
+                  onClick={() => {
+                    setOpen(false);
+                    openNotification(n);
+                  }}
+                  className={`px-4 py-3 text-sm cursor-pointer hover:bg-gray-50 transition ${n.is_read ? "text-gray-500" : "text-gray-800 font-medium bg-purple-50"}`}
+                >
                   <p>{n.message}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {new Date(n.created_at).toLocaleDateString("en-PK", { day: "numeric", month: "short" })}

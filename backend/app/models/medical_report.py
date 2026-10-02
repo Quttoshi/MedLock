@@ -36,3 +36,7 @@ class MedicalReport(Base):
         "BlockchainLog", back_populates="medical_report",
         cascade="all, delete-orphan", passive_deletes=True,
     )
+    imaging_study = relationship(
+        "ImagingStudy", back_populates="medical_report", uselist=False,
+        cascade="all, delete-orphan", passive_deletes=True,
+    )

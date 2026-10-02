@@ -11,3 +11,6 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+# Encrypted imaging uploads waiting to be processed
+storage/

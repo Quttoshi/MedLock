@@ -21,6 +21,8 @@ class AccessRequestResponse(BaseModel):
     # Doctor info (for patient view)
     doctor_name: Optional[str] = None
     doctor_specialization: Optional[str] = None
+    doctor_verified: Optional[bool] = None
+    doctor_verification_label: Optional[str] = None
 
     # Patient info (for doctor view)
     patient_name: Optional[str] = None

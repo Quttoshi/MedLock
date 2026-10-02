@@ -9,7 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
-from app.routers import auth, notifications, reports, access_requests, admin, doctor, medical_center
+from app.routers import auth, notifications, reports, access_requests, admin, doctor, medical_center, imaging
 from app.services import background_jobs
 
 limiter = Limiter(key_func=get_remote_address)
@@ -39,6 +39,8 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+# Before reports: its /reports/imaging/upload must not be shadowed by /reports/{report_id} routes.
+app.include_router(imaging.router)
 app.include_router(reports.router)
 app.include_router(notifications.router)
 app.include_router(access_requests.router)

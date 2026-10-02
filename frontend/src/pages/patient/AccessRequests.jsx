@@ -3,6 +3,16 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 
 // ── Status Badge ─────────────────────────────────────
+// How the doctor was verified, so the patient can judge the request
+function VerificationBadge({ request }) {
+  if (request.doctor_verified === undefined || request.doctor_verified === null) return null;
+  return request.doctor_verified ? (
+    <p className="text-xs text-green-700 mt-0.5">✓ {request.doctor_verification_label}</p>
+  ) : (
+    <p className="text-xs text-yellow-700 mt-0.5">⚠ Not yet verified — cannot open your records even if you approve</p>
+  );
+}
+
 function StatusBadge({ status }) {
   const config = {
     pending: "bg-yellow-100 text-yellow-700",
@@ -56,6 +66,7 @@ function PendingCard({ request, onApprove, onDeny, actionLoading }) {
                 {request.doctor_name}
               </p>
               <p className="text-xs text-gray-500">{request.doctor_specialization}</p>
+              <VerificationBadge request={request} />
             </div>
             <StatusBadge status={request.status} />
           </div>
@@ -132,6 +143,7 @@ function HistoryCard({ request, onRevoke, actionLoading }) {
                 {request.doctor_name}
               </p>
               <p className="text-xs text-gray-500">{request.doctor_specialization}</p>
+              <VerificationBadge request={request} />
             </div>
             <StatusBadge status={request.status} />
           </div>

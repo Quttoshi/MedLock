@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
+import { useOpenNotification } from "../context/useOpenNotification";
 
 // ── Notification Icon ────────────────────────────────
 function NotifIcon({ type }) {
@@ -31,7 +32,8 @@ function timeAgo(dateStr) {
 function Navbar({ onMenuClick }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+  const openNotification = useOpenNotification("/patient/notifications");
+  const { notifications, unreadCount, markAllAsRead } =
     useNotifications();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -127,9 +129,8 @@ function Navbar({ onMenuClick }) {
                   <div
                     key={notif.id}
                     onClick={() => {
-                      if (!notif.is_read) markAsRead(notif.id);
                       setDropdownOpen(false);
-                      navigate("/patient/notifications");
+                      openNotification(notif);
                     }}
                     className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition ${!notif.is_read ? "bg-blue-50" : ""}`}
                   >

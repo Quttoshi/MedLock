@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -20,6 +20,7 @@ from app.services.storage_service import get_supabase, BUCKET_NAME
 from app.services.access_request_service import check_doctor_has_access
 from app.services.audit_service import log_action
 from app.services.blockchain_service import verify_report_integrity
+from app.services import doctor_verification_service as verification
 
 router = APIRouter(prefix="/doctor", tags=["Doctor"])
 
@@ -227,6 +228,9 @@ def download_patient_report(
 
     if not check_doctor_has_access(doctor, report.id, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this report")
+    if report.report_type == "imaging":
+        from app.routers.reports import imaging_archive_response
+        return imaging_archive_response(report)
 
     client = get_supabase()
     encrypted_bytes = client.storage.from_(BUCKET_NAME).download(report.file_url)
@@ -285,3 +289,40 @@ def verify_patient_report(
         request=request,
     )
     return result
+
+
+# ── License verification ─────────────────────────────────
+
+@router.get("/verification")
+def get_my_verification(
+    current_user: User = Depends(require_role(["doctor"])),
+    db: Session = Depends(get_db),
+):
+    """The doctor's verification status, how they were verified, and their latest request."""
+    summary = verification.verification_summary(_get_doctor(current_user, db))
+    return {**summary, "pmdc_register_url": verification.PMDC_REGISTER_URL}
+
+
+@router.post("/verification-requests", status_code=201)
+def submit_verification_request(
+    registration_number: str = Form(...),
+    license_expires_at: str = Form(None),
+    certificate: UploadFile = File(None),
+    request: Request = None,
+    current_user: User = Depends(require_role(["doctor"])),
+    db: Session = Depends(get_db),
+):
+    """Independent doctors ask an admin to verify their license against the PMDC register."""
+    doctor = _get_doctor(current_user, db)
+    expires = None
+    if license_expires_at:
+        try:
+            expires = datetime.strptime(license_expires_at, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="License expiry must be a date (YYYY-MM-DD)")
+    req = verification.submit_request(doctor, registration_number, expires, certificate, db)
+    log_action(
+        db, action="doctor_verification_requested", performed_by=current_user.id, entity_type="doctor",
+        entity_id=doctor.id, details={"registration_number": req.registration_number}, request=request,
+    )
+    return verification.request_summary(req)

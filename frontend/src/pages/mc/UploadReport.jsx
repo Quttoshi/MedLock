@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { uploadPatientReport } from "../../api/medicalCenter";
+import { uploadPatientImaging, uploadPatientReport } from "../../api/medicalCenter";
+
+// DICOM studies (.dcm, or a .zip of a whole CT/MRI series) go through imaging upload.
+const IMAGING_MAX_MB = 300;
+const isDicomFile = (f) => Boolean(f) && /.(dcm|dicom|zip)$/i.test(f.name);
 
 const REPORT_TYPES = [
   "blood_test",
@@ -27,8 +31,13 @@ function MCUploadReport() {
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    if (!form.patient_email.trim() || !form.report_type || !file) {
+    const imaging = isDicomFile(file);
+    if (!form.patient_email.trim() || (!form.report_type && !imaging) || !file) {
       setError("All fields are required — patient email, report type, and file.");
+      return;
+    }
+    if (imaging && file.size > IMAGING_MAX_MB * 1024 * 1024) {
+      setError(`Imaging studies must be under ${IMAGING_MAX_MB}MB.`);
       return;
     }
 
@@ -39,13 +48,20 @@ function MCUploadReport() {
     try {
       const formData = new FormData();
       formData.append("patient_email", form.patient_email.trim());
-      formData.append("report_type", form.report_type);
+      if (!imaging) formData.append("report_type", form.report_type);
       formData.append("file", file);
 
-      await uploadPatientReport(token, formData);
-      setSuccess(
-        "Report uploaded successfully. The patient has been notified and must approve it before it appears in their record."
-      );
+      if (imaging) {
+        await uploadPatientImaging(token, formData);
+        setSuccess(
+          "Imaging study uploaded. It is being encrypted and processed; the patient will be notified to approve it once it's ready."
+        );
+      } else {
+        await uploadPatientReport(token, formData);
+        setSuccess(
+          "Report uploaded successfully. The patient has been notified and must approve it before it appears in their record."
+        );
+      }
       setForm({ patient_email: "", report_type: "" });
       setFile(null);
       document.getElementById("file-input").value = "";
@@ -82,7 +98,12 @@ function MCUploadReport() {
             />
           </div>
 
-          {/* Report Type */}
+          {/* Report Type (imaging studies carry their own scan type) */}
+          {isDicomFile(file) ? (
+            <div className="p-3 bg-purple-50 border border-purple-100 rounded-xl text-sm text-purple-800">
+              DICOM imaging study detected. The scan type, date and series are read from the files.
+            </div>
+          ) : (
           <div>
             <label className="text-xs font-medium text-gray-600 mb-1 block">
               Report Type
@@ -100,17 +121,18 @@ function MCUploadReport() {
               ))}
             </select>
           </div>
+          )}
 
           {/* File Upload */}
           <div>
             <label className="text-xs font-medium text-gray-600 mb-1 block">
-              Report File (PDF, JPEG, PNG, TIFF — max 50MB)
+              Report File (PDF, JPEG, PNG, TIFF — max 10MB · DICOM .dcm or .zip study — max {IMAGING_MAX_MB}MB)
             </label>
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-purple-300 transition">
               <input
                 id="file-input"
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.docx,.doc"
+                accept=".pdf,.jpg,.jpeg,.png,.docx,.doc,.dcm,.dicom,.zip"
                 onChange={(e) => setFile(e.target.files[0])}
                 className="hidden"
               />

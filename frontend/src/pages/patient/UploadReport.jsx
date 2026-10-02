@@ -1,6 +1,11 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
+
+// DICOM studies (.dcm, or a .zip of a whole CT/MRI series) go through imaging upload.
+const IMAGING_MAX_MB = 300;
+const isDicomFile = (f) => Boolean(f) && /.(dcm|dicom|zip)$/i.test(f.name);
 
 const REPORT_TYPES = [
   "Blood Test",
@@ -29,6 +34,11 @@ function UploadReport() {
 
   // ── File Validation ──────────────────────────────────
   const validateFile = (selectedFile) => {
+    if (isDicomFile(selectedFile)) {
+      return selectedFile.size > IMAGING_MAX_MB * 1024 * 1024
+        ? `Imaging studies must be under ${IMAGING_MAX_MB}MB.`
+        : null;
+    }
     const allowedTypes = [
       "application/pdf",
       "image/jpeg",
@@ -71,7 +81,7 @@ function UploadReport() {
   const validate = () => {
     const newErrors = {};
     if (!file) newErrors.file = "Please select a file to upload.";
-    if (!reportType) newErrors.reportType = "Please select a report type.";
+    if (!reportType && !isDicomFile(file)) newErrors.reportType = "Please select a report type.";
     return newErrors;
   };
 
@@ -88,12 +98,13 @@ function UploadReport() {
     setProgress(0);
     setServerError("");
 
+    const imaging = isDicomFile(file);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("report_type", reportType);
+    if (!imaging) formData.append("report_type", reportType);
 
     try {
-      const response = await api.post("/reports/upload", formData, {
+      const response = await api.post(imaging ? "/reports/imaging/upload" : "/reports/upload", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -157,12 +168,24 @@ function UploadReport() {
             <div>
               <p className="font-semibold text-blue-800">Upload Successful</p>
               <p className="text-sm text-blue-700">
-                Your report has been encrypted and recorded on the blockchain.
+                {uploadResult.report_type === "imaging"
+                  ? `Your imaging study (${uploadResult.instance_count} files) is being encrypted and processed. You'll get a notification when it's ready.`
+                  : "Your report has been encrypted and recorded on the blockchain."}
               </p>
             </div>
           </div>
 
+          {uploadResult.report_type === "imaging" && (
+            <Link
+              to={`/patient/reports/${uploadResult.id}`}
+              className="inline-block text-sm font-medium text-blue-700 hover:underline"
+            >
+              View study →
+            </Link>
+          )}
+
           {/* TX Hash */}
+          {uploadResult.tx_hash && (
           <div className="bg-white rounded-xl p-4 border border-blue-100">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
               Blockchain Transaction Hash
@@ -171,6 +194,7 @@ function UploadReport() {
               {uploadResult.tx_hash}
             </p>
           </div>
+          )}
 
           {/* Block Number */}
           {uploadResult.block_number && (
@@ -224,7 +248,7 @@ function UploadReport() {
                 id="fileInput"
                 type="file"
                 className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.docx,.doc"
+                accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.docx,.doc,.dcm,.dicom,.zip"
                 onChange={(e) => {
                   if (e.target.files[0]) handleFileSelect(e.target.files[0]);
                 }}
@@ -274,7 +298,7 @@ function UploadReport() {
                     <span className="text-blue-700">browse</span>
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    PDF, JPEG, PNG, TIFF — max 10MB
+                    PDF, JPEG, PNG, TIFF — max 10MB · DICOM (.dcm or .zip study) — max {IMAGING_MAX_MB}MB
                   </p>
                 </>
               )}
@@ -285,7 +309,12 @@ function UploadReport() {
             )}
           </div>
 
-          {/* Report Type */}
+          {/* Report Type (imaging studies carry their own scan type) */}
+          {isDicomFile(file) ? (
+            <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800">
+              DICOM imaging study detected. The scan type, date and series are read from the files.
+            </div>
+          ) : (
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Report Type
@@ -307,6 +336,7 @@ function UploadReport() {
               <p className="text-red-500 text-xs mt-1">{errors.reportType}</p>
             )}
           </div>
+          )}
 
           {/* Progress Bar */}
           {uploading && (
