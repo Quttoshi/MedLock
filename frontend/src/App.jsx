@@ -20,6 +20,7 @@ import AdminUsers from "./pages/admin/Users";
 import AdminDoctors from "./pages/admin/Doctors";
 import AdminMedicalCenters from "./pages/admin/MedicalCenters";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
+import AdminNotifications from "./pages/admin/Notifications";
 
 // Doctor
 import DoctorLayout from "./layouts/DoctorLayout";
@@ -105,6 +106,7 @@ function App() {
         <Route path="doctors" element={<AdminDoctors />} />
         <Route path="medical-centers" element={<AdminMedicalCenters />} />
         <Route path="audit-logs" element={<AdminAuditLogs />} />
+        <Route path="notifications" element={<AdminNotifications />} />
       </Route>
 
       {/* Doctor */}

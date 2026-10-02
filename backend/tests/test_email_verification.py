@@ -142,9 +142,10 @@ class TestVerificationEmail:
         monkeypatch.setattr(ev, "send_email_async", sent)
         user = _user()
         ev.send_verification_email(user)
-        to, subject, body = sent.call_args.args
+        to, subject, text, html = sent.call_args.args
         assert to == user.email
-        assert f"{settings.FRONTEND_URL}/verify-email?token=" in body
+        assert f"{settings.FRONTEND_URL}/verify-email?token=" in text
+        assert f"{settings.FRONTEND_URL}/verify-email?token=" in html
 
 
 class TestNotificationEmailsOnlyToConfirmedAddresses:

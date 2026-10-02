@@ -118,6 +118,7 @@ def affiliation(monkeypatch):
     doctor = SimpleNamespace(
         id=uuid.uuid4(), user_id=uuid.uuid4(), license_number="PMDC-12345",
         is_verified=False, medical_center_id=None, user=SimpleNamespace(full_name="Dr. Test"),
+        verification_requests=[],
     )
     req = SimpleNamespace(id=uuid.uuid4(), status="pending", doctor=doctor, decided_at=None, rejection_reason=None)
     mc = SimpleNamespace(id=uuid.uuid4(), name="City Lab")

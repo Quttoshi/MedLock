@@ -18,6 +18,7 @@ WALLET = "0x00000000000000000000000000000000000000A1"
 def report():
     return SimpleNamespace(
         id=uuid.uuid4(), file_url="p/r.enc", encryption_key_ref="key", file_hash_sha256=ORIGINAL_HASH,
+        report_type="blood_test",
     )
 
 

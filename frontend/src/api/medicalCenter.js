@@ -24,6 +24,15 @@ export const approveAffiliation = (token, requestId, licenseNumber) =>
 export const rejectAffiliation = (token, requestId, reason) =>
   api.patch(`/mc/affiliation-requests/${requestId}/reject`, { reason }, { headers: getHeaders(token) });
 
+// Upload a DICOM imaging study (.dcm or .zip) for a patient
+export const uploadPatientImaging = (token, formData) =>
+  api.post("/mc/imaging/upload", formData, {
+    headers: {
+      ...getHeaders(token),
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
 // Upload report for a patient
 export const uploadPatientReport = (token, formData) =>
   api.post("/mc/reports/upload", formData, {

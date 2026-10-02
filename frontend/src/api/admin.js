@@ -16,11 +16,36 @@ export const getAdminAuditLogs = (token, action = "", limit = 50, offset = 0) =>
   api.get(`/admin/audit-logs?limit=${limit}&offset=${offset}${action ? `&action=${action}` : ""}`, { headers: getHeaders(token) });
 
 // Doctor actions
-export const verifyDoctor = (token, id) =>
-  api.patch(`/admin/doctors/${id}/verify`, {}, { headers: getHeaders(token) });
+// Admin override; the reason is recorded and shared with the doctor
+export const verifyDoctor = (token, id, reason, licenseExpiresAt) =>
+  api.patch(
+    `/admin/doctors/${id}/verify`,
+    { reason, license_expires_at: licenseExpiresAt || null },
+    { headers: getHeaders(token) }
+  );
 
-export const unverifyDoctor = (token, id) =>
-  api.patch(`/admin/doctors/${id}/unverify`, {}, { headers: getHeaders(token) });
+export const unverifyDoctor = (token, id, reason) =>
+  api.patch(`/admin/doctors/${id}/unverify`, { reason }, { headers: getHeaders(token) });
+
+// License verification requests from independent doctors
+export const getVerificationRequests = (token, status = "pending") =>
+  api.get(`/admin/doctor-verification-requests?status=${status}`, { headers: getHeaders(token) });
+
+export const getVerificationCertificate = (token, id) =>
+  api.get(`/admin/doctor-verification-requests/${id}/certificate`, {
+    headers: getHeaders(token),
+    responseType: "blob",
+  });
+
+export const approveVerificationRequest = (token, id, licenseExpiresAt, note) =>
+  api.patch(
+    `/admin/doctor-verification-requests/${id}/approve`,
+    { license_expires_at: licenseExpiresAt, note: note || null },
+    { headers: getHeaders(token) }
+  );
+
+export const rejectVerificationRequest = (token, id, reason) =>
+  api.patch(`/admin/doctor-verification-requests/${id}/reject`, { reason }, { headers: getHeaders(token) });
 
 // Medical center actions
 export const approveMC = (token, id) =>

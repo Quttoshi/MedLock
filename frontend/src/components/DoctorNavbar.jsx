@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
+import { useOpenNotification } from "../context/useOpenNotification";
 
 function timeAgo(dateStr) {
   const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
@@ -14,7 +15,8 @@ function timeAgo(dateStr) {
 function DoctorNavbar({ onMenuClick }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const openNotification = useOpenNotification("/doctor/notifications");
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -97,9 +99,8 @@ function DoctorNavbar({ onMenuClick }) {
                     <div
                       key={notif.id}
                       onClick={() => {
-                        if (!notif.is_read) markAsRead(notif.id);
                         setDropdownOpen(false);
-                        navigate("/doctor/notifications");
+                        openNotification(notif);
                       }}
                       className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition ${!notif.is_read ? "bg-green-50" : ""}`}
                     >

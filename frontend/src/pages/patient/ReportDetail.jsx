@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import IntegrityCheck from "../../components/IntegrityCheck";
+import ImagingStudyView from "../../components/ImagingStudyView";
+import { imagingDownloadName } from "../../utils/imaging";
 
 function BlockchainBadge({ logs }) {
   if (!logs || logs.length === 0) return null;
@@ -37,6 +39,29 @@ function ReportDetail() {
   const [blockchainLogs, setBlockchainLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const abnormalRows = ocrData?.abnormal_values || [];
+
+  // Stable references: ImagingStudyView reloads whenever these change.
+  const fetchImagingStudy = useCallback(
+    () => api.get(`/reports/${id}/imaging`, { headers: { Authorization: `Bearer ${token}` } }),
+    [id, token]
+  );
+  const fetchImagingSlices = useCallback(
+    (seriesId, onProgress) =>
+      api.get(`/reports/${id}/imaging/series/${seriesId}/slices`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "arraybuffer",
+        onDownloadProgress: onProgress,
+      }),
+    [id, token]
+  );
+  const fetchImagingPreview = useCallback(
+    (seriesId) =>
+      api.get(`/reports/${id}/imaging/series/${seriesId}/preview`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",
+      }),
+    [id, token]
+  );
 
   // ── Fetch Report + OCR + Blockchain ──────────────────
   useEffect(() => {
@@ -85,7 +110,12 @@ function ReportDetail() {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", report.original_filename || "report");
+      link.setAttribute(
+        "download",
+        report.report_type === "imaging"
+          ? imagingDownloadName(report.original_filename)
+          : report.original_filename || "report"
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -176,6 +206,18 @@ function ReportDetail() {
           </div>
         </div>
       </div>
+
+      {/* Imaging Study */}
+      {report.report_type === "imaging" && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
+          <h2 className="text-base font-semibold text-gray-700 mb-4">Imaging Study</h2>
+          <ImagingStudyView
+            fetchStudy={fetchImagingStudy}
+            fetchPreview={fetchImagingPreview}
+            fetchSlices={fetchImagingSlices}
+          />
+        </div>
+      )}
 
       {/* Integrity Info */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">

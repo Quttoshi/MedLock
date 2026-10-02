@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "../components/AdminSidebar";
 import AdminNavbar from "../components/AdminNavbar";
+import { NotificationProvider } from "../context/NotificationContext";
 
 function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
+    <NotificationProvider>
     <div className="app-shell flex h-screen overflow-hidden">
       <AdminSidebar
         isOpen={sidebarOpen}
@@ -19,6 +21,7 @@ function AdminLayout() {
         </main>
       </div>
     </div>
+    </NotificationProvider>
   );
 }
 

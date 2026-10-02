@@ -328,7 +328,18 @@ def verify_report_integrity(report: MedicalReport, db: Session) -> dict:
         "checks": checks,
     }
 
+    if report.report_type == "imaging":
+        study = report.imaging_study
+        if not study or study.processing_status != "completed":
+            result["status"] = "unverifiable"
+            result["reason"] = "This imaging study is still being processed."
+            return result
+
+    # For imaging reports the stored "file" is the study's manifest.
     checks.append(_check_stored_file(report))
+    if report.report_type == "imaging" and checks[0]["passed"]:
+        from app.services.imaging_service import check_stored_parts  # imaging_service imports this module
+        checks.append(check_stored_parts(report))
 
     upload_log = db.query(BlockchainLog).filter(
         BlockchainLog.report_id == report.id,
@@ -337,7 +348,7 @@ def verify_report_integrity(report: MedicalReport, db: Session) -> dict:
     ).order_by(BlockchainLog.created_at).first()
 
     if not _is_configured() or not upload_log:
-        result["status"] = "tampered" if not checks[0]["passed"] else "unverifiable"
+        result["status"] = "unverifiable" if all(c["passed"] for c in checks) else "tampered"
         result["reason"] = (
             "Blockchain verification is not configured on this server."
             if not _is_configured()

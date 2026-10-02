@@ -17,10 +17,36 @@ export const downloadReport = (token, patientId, reportId) =>
     responseType: "blob",
   });
 
+// Imaging (DICOM) study details and series previews
+export const getImagingStudy = (token, patientId, reportId) =>
+  api.get(`/doctor/patients/${patientId}/reports/${reportId}/imaging`, { headers: getHeaders(token) });
+
+export const getImagingPreview = (token, patientId, reportId, seriesId) =>
+  api.get(`/doctor/patients/${patientId}/reports/${reportId}/imaging/series/${seriesId}/preview`, {
+    headers: getHeaders(token),
+    responseType: "blob",
+  });
+
+export const getImagingSlices = (token, patientId, reportId, seriesId, onProgress) =>
+  api.get(`/doctor/patients/${patientId}/reports/${reportId}/imaging/series/${seriesId}/slices`, {
+    headers: getHeaders(token),
+    responseType: "arraybuffer",
+    onDownloadProgress: onProgress,
+  });
+
 // Check a report against its blockchain record
 export const verifyReport = (token, patientId, reportId) =>
   api.get(`/doctor/patients/${patientId}/reports/${reportId}/verify`, {
     headers: getHeaders(token),
+  });
+
+// License verification (independent doctors are verified by an admin via PMDC)
+export const getMyVerification = (token) =>
+  api.get("/doctor/verification", { headers: getHeaders(token) });
+
+export const submitVerificationRequest = (token, formData) =>
+  api.post("/doctor/verification-requests", formData, {
+    headers: { ...getHeaders(token), "Content-Type": "multipart/form-data" },
   });
 
 // Access requests

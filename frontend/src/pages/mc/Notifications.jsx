@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNotifications } from "../../context/NotificationContext";
+import { useOpenNotification } from "../../context/useOpenNotification";
 
 function timeAgo(dateStr) {
   const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
@@ -11,7 +12,8 @@ function timeAgo(dateStr) {
 }
 
 function MCNotifications() {
-  const { notifications, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, markAllAsRead } = useNotifications();
+  const openNotification = useOpenNotification("/mc/notifications");
   const [filter, setFilter] = useState("all");
 
   const filtered = notifications.filter((n) => {
@@ -69,7 +71,7 @@ function MCNotifications() {
           {filtered.map((notif) => (
             <div
               key={notif.id}
-              onClick={() => !notif.is_read && markAsRead(notif.id)}
+              onClick={() => openNotification(notif)}
               className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${notif.is_read ? "bg-white border-gray-100 opacity-70" : "bg-purple-50 border-purple-100 hover:border-purple-200"}`}
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${notif.is_read ? "bg-gray-100 text-gray-400" : "bg-purple-100 text-purple-700"}`}>

@@ -10,6 +10,7 @@ from app.models.medical_report import MedicalReport
 from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.access_request import AccessRequestByEmail, AccessRequestResponse
+from app.services.doctor_verification_service import verification_label
 from app.services.notification_service import create_notification
 from app.services.blockchain_service import log_event as blockchain_log
 
@@ -28,6 +29,8 @@ def _build_response(req: AccessRequest) -> AccessRequestResponse:
         expires_at=req.expires_at,
         doctor_name=doctor_user.full_name if doctor_user else None,
         doctor_specialization=req.doctor.specialization if req.doctor else None,
+        doctor_verified=req.doctor.is_verified if req.doctor else None,
+        doctor_verification_label=verification_label(req.doctor) if req.doctor else None,
         patient_name=patient_user.full_name if patient_user else None,
         patient_email=patient_user.email if patient_user else None,
     )
@@ -133,6 +136,7 @@ def approve_request(request_id: str, current_user: User, db: Session) -> AccessR
             recipient_id=req.doctor.user_id,
             notification_type="access_approved",
             message=f"Your request to access {req.patient.user.full_name}'s records has been approved. Access expires in {ACCESS_EXPIRY_DAYS} days.",
+            link=f"/doctor/patients/{req.patient_id}/reports",
         )
     except Exception:
         pass
@@ -190,7 +194,8 @@ def revoke_request(request_id: str, current_user: User, db: Session) -> AccessRe
 
 def check_doctor_has_access(doctor: Doctor, report_id: uuid.UUID, db: Session) -> bool:
     report = db.query(MedicalReport).filter(MedicalReport.id == report_id).first()
-    if not report:
+    # Medical-center uploads join the patient's record only once the patient approves them.
+    if not report or not report.is_approved:
         return False
 
     req = db.query(AccessRequest).filter(

@@ -1,5 +1,5 @@
 from typing import Optional, Any
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -24,9 +24,35 @@ class DoctorListItem(BaseModel):
     specialization: str
     license_number: str
     is_verified: bool
+    verification_method: Optional[str] = None
+    verification_label: Optional[str] = None
+    verified_at: Optional[datetime] = None
+    license_expires_at: Optional[date] = None
+    verification_note: Optional[str] = None
+    medical_center_name: Optional[str] = None
+    has_pending_request: bool = False
 
     class Config:
         from_attributes = True
+
+
+class AdminVerifyDoctorRequest(BaseModel):
+    reason: str
+    license_expires_at: Optional[date] = None
+
+
+class AdminRevokeDoctorRequest(BaseModel):
+    reason: str
+
+
+class ApproveVerificationRequest(BaseModel):
+    # Confirmed by the admin from the PMDC register
+    license_expires_at: date
+    note: Optional[str] = None
+
+
+class RejectVerificationRequest(BaseModel):
+    reason: str
 
 
 class MedicalCenterListItem(BaseModel):

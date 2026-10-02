@@ -28,6 +28,22 @@ class Settings(BaseSettings):
     # Upper bound on the fee per gas we are willing to pay, in gwei.
     BLOCKCHAIN_MAX_FEE_GWEI: float = 50.0
 
+    # Medical imaging (DICOM) uploads
+    IMAGING_MAX_UPLOAD_MB: int = 300
+    # Encrypted parts stay below Supabase's per-file limit (50 MB on the free plan).
+    IMAGING_PART_MAX_MB: int = 45
+    IMAGING_MAX_FILES: int = 5000
+    # Cap on the total unpacked size of a .zip, to reject zip bombs.
+    IMAGING_MAX_UNPACKED_MB: int = 2048
+    # Uploads wait here (encrypted) until processed; relative to the backend folder.
+    IMAGING_STAGING_DIR: str = "storage/imaging_staging"
+    IMAGING_PREVIEW_MAX_PX: int = 512
+    # Slice viewer images (every slice, rendered once during processing)
+    IMAGING_SLICE_MAX_PX: int = 512
+    IMAGING_SLICE_MAX_PX_XRAY: int = 1024
+    IMAGING_SLICE_JPEG_QUALITY: int = 85
+    IMAGING_MAX_PROCESSING_ATTEMPTS: int = 3
+
     # Periodic jobs: blockchain retries/confirmations and revoked-token cleanup
     BACKGROUND_JOBS_ENABLED: bool = True
     BACKGROUND_JOBS_INTERVAL_SECONDS: int = 60

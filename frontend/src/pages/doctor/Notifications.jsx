@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNotifications } from "../../context/NotificationContext";
+import { useOpenNotification } from "../../context/useOpenNotification";
 
 function NotificationIcon({ type }) {
   const config = {
@@ -37,7 +38,8 @@ function timeAgo(dateStr) {
 }
 
 function Notifications() {
-  const { notifications, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, markAllAsRead } = useNotifications();
+  const openNotification = useOpenNotification("/doctor/notifications");
   const [filter, setFilter] = useState("all");
 
   const filtered = notifications.filter((n) => {
@@ -95,7 +97,7 @@ function Notifications() {
         {filtered.map((notif) => (
           <div
             key={notif.id}
-            onClick={() => !notif.is_read && markAsRead(notif.id)}
+            onClick={() => openNotification(notif)}
             className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${notif.is_read ? "bg-white border-gray-100 opacity-70" : "bg-green-50 border-green-100 hover:border-green-200"}`}
           >
             <NotificationIcon type={notif.type} />

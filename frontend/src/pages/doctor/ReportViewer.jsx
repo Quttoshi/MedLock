@@ -1,7 +1,16 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { downloadReport, getPatientReports, verifyReport } from "../../api/doctor";
+import {
+  downloadReport,
+  getImagingPreview,
+  getImagingSlices,
+  getImagingStudy,
+  getPatientReports,
+  verifyReport,
+} from "../../api/doctor";
+import ImagingStudyView from "../../components/ImagingStudyView";
+import { imagingDownloadName } from "../../utils/imaging";
 import IntegrityCheck from "../../components/IntegrityCheck";
 
 function ReportViewer() {
@@ -17,6 +26,20 @@ function ReportViewer() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Stable references: ImagingStudyView reloads whenever these change.
+  const fetchImagingStudy = useCallback(
+    () => getImagingStudy(token, patientId, reportId),
+    [token, patientId, reportId]
+  );
+  const fetchImagingPreview = useCallback(
+    (seriesId) => getImagingPreview(token, patientId, reportId, seriesId),
+    [token, patientId, reportId]
+  );
+  const fetchImagingSlices = useCallback(
+    (seriesId, onProgress) => getImagingSlices(token, patientId, reportId, seriesId, onProgress),
+    [token, patientId, reportId]
+  );
+
   // ── Fetch report metadata ────────────────────────────
   useEffect(() => {
     getPatientReports(token, patientId)
@@ -30,7 +53,8 @@ function ReportViewer() {
 
   // ── Load preview ─────────────────────────────────────
   useEffect(() => {
-    if (!report) return;
+    // Imaging studies show series previews instead; downloading the whole study here would be wasteful.
+    if (!report || report.report_type === "imaging") return;
     setPreviewLoading(true);
     downloadReport(token, patientId, reportId)
       .then((res) => {
@@ -75,7 +99,10 @@ function ReportViewer() {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement("a");
       a.href = url;
-      a.download = report?.original_filename || "report";
+      a.download =
+        report?.report_type === "imaging"
+          ? imagingDownloadName(report.original_filename)
+          : report?.original_filename || "report";
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {
@@ -207,7 +234,17 @@ function ReportViewer() {
         <IntegrityCheck verify={() => verifyReport(token, patientId, reportId)} />
       </div>
 
-      {/* Preview Card */}
+      {report.report_type === "imaging" ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-base font-semibold text-gray-700 mb-4">Imaging Study</h2>
+          <ImagingStudyView
+            fetchStudy={fetchImagingStudy}
+            fetchPreview={fetchImagingPreview}
+            fetchSlices={fetchImagingSlices}
+          />
+        </div>
+      ) : (
+      /* Preview Card */
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <h2 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,6 +324,7 @@ function ReportViewer() {
           </div>
         )}
       </div>
+      )}
 
       {/* Security Notice */}
       <div className="mt-4 bg-green-50 border border-green-100 rounded-2xl p-4 flex gap-3 items-start">

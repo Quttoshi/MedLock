@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.user import User
+from app.services.email_templates import render_email
 from app.services.notification_service import send_email_async
 
 # Marks a token as an email-confirmation token; get_current_user refuses any token
@@ -39,14 +40,21 @@ def create_verification_token(user: User) -> str:
 
 def send_verification_email(user: User) -> None:
     link = f"{settings.FRONTEND_URL.rstrip('/')}/verify-email?token={create_verification_token(user)}"
-    body = (
-        f"Hi {user.full_name or 'there'},\n\n"
-        "Please confirm your email address to activate your MedLock account:\n\n"
-        f"{link}\n\n"
-        f"This link expires in {settings.EMAIL_VERIFICATION_EXPIRE_HOURS} hours. "
-        "If you did not create a MedLock account, you can ignore this email."
+    text, html = render_email(
+        name=user.full_name,
+        heading="Confirm your email address",
+        paragraphs=[
+            "Thank you for registering with MedLock. To activate your account and start "
+            "managing your medical records securely, please confirm your email address.",
+        ],
+        button_text="Confirm email address",
+        button_url=link,
+        note=(
+            f"This link expires in {settings.EMAIL_VERIFICATION_EXPIRE_HOURS} hours. "
+            "If you did not create a MedLock account, you can safely ignore this email."
+        ),
     )
-    send_email_async(user.email, "MedLock: Confirm your email address", body)
+    send_email_async(user.email, "MedLock – Confirm your email address", text, html)
 
 
 def verify_email_token(token: str, db: Session) -> User:

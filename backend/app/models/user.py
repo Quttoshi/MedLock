@@ -23,7 +23,7 @@ class User(Base):
 
     # Relationships
     patient = relationship("Patient", back_populates="user", uselist=False)
-    doctor = relationship("Doctor", back_populates="user", uselist=False)
+    doctor = relationship("Doctor", back_populates="user", uselist=False, foreign_keys="Doctor.user_id")
     medical_center = relationship("MedicalCenter", back_populates="user", uselist=False)
     admin = relationship("Admin", back_populates="user", uselist=False)
     audit_logs = relationship("AuditLog", back_populates="performed_by_user")
