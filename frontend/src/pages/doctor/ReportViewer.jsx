@@ -14,6 +14,8 @@ import {
 import ImagingStudyView from "../../components/ImagingStudyView";
 import { imagingDownloadName } from "../../utils/imaging";
 import IntegrityCheck from "../../components/IntegrityCheck";
+import ReportThreads from "../../components/ReportThreads";
+import { parseServerDate } from "../../utils/dates";
 
 function ReportViewer() {
   const { token } = useAuth();
@@ -26,6 +28,9 @@ function ReportViewer() {
   const [previewType, setPreviewType] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [error, setError] = useState("");
+  // The Questions card's response; undefined until it loads. A doctor keeps reading their
+  // own thread after their access to the report ends.
+  const [threadInfo, setThreadInfo] = useState(undefined);
 
   // Stable references: ImagingStudyView reloads whenever these change.
   const fetchImagingStudy = useCallback(
@@ -114,7 +119,7 @@ function ReportViewer() {
 
   const formatDate = (dateStr) =>
     dateStr
-      ? new Date(dateStr).toLocaleDateString("en-PK", {
+      ? parseServerDate(dateStr).toLocaleDateString("en-PK", {
           day: "numeric",
           month: "long",
           year: "numeric",
@@ -128,14 +133,37 @@ function ReportViewer() {
     return <p className="py-24 text-center text-muted">Loading...</p>;
   }
 
-  // ── Not found ─────────────────────────────────────────
+  // ── Not found, or access ended ────────────────────────
   if (!report) {
+    const hasThread = threadInfo?.threads?.length > 0;
     return (
-      <div className="mx-auto max-w-4xl py-24 text-center">
-        <p className="display text-xl text-ink">Report not found</p>
-        <Link to={`/doctor/patients/${patientId}/reports`} className="link mt-4 inline-block text-sm">
-          Back to records
-        </Link>
+      <div className="mx-auto max-w-5xl space-y-5">
+        {hasThread ? (
+          <>
+            <Link to="/doctor/patients" className="link inline-flex items-center gap-2 text-sm no-underline hover:underline">
+              <ArrowLeft aria-hidden="true" size={16} />
+              Back to patients
+            </Link>
+            <section className="card card-pad">
+              <p className="eyebrow">{threadInfo.report_filename}</p>
+              <h1 className="display mt-2 text-[26px] leading-tight text-ink">Report no longer available</h1>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                You no longer have access to this patient's records, so the report is hidden. Your conversation with
+                the patient about it is kept below, read-only.
+              </p>
+            </section>
+          </>
+        ) : (
+          threadInfo !== undefined && (
+            <div className="py-24 text-center">
+              <p className="display text-xl text-ink">Report not found</p>
+              <Link to={`/doctor/patients/${patientId}/reports`} className="link mt-4 inline-block text-sm">
+                Back to records
+              </Link>
+            </div>
+          )
+        )}
+        <ReportThreads token={token} reportId={reportId} role="doctor" onLoad={setThreadInfo} />
       </div>
     );
   }
@@ -232,6 +260,8 @@ function ReportViewer() {
           )}
         </section>
       )}
+
+      <ReportThreads token={token} reportId={reportId} role="doctor" />
 
       <div className="panel-deep flex gap-4 p-5">
         <ShieldCheck aria-hidden="true" size={22} className="mt-0.5 flex-shrink-0 text-deep-on-muted" />

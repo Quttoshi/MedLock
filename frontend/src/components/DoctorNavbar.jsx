@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useOpenNotification } from "../context/useOpenNotification";
+import { parseServerDate } from "../utils/dates";
 
 function timeAgo(dateStr) {
-  const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
+  const diff = Math.floor((new Date() - parseServerDate(dateStr)) / 1000);
   if (diff < 60) return "Just now";
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;

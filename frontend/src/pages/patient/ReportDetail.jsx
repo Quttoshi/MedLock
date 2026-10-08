@@ -5,9 +5,11 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import IntegrityCheck from "../../components/IntegrityCheck";
 import ImagingStudyView from "../../components/ImagingStudyView";
+import ReportThreads from "../../components/ReportThreads";
 import { imagingDownloadName } from "../../utils/imaging";
 import StatusPill from "../../components/ui/StatusPill";
 import { sourceLabel } from "../../adapters/patientStory";
+import { parseServerDate } from "../../utils/dates";
 
 function BlockchainBadge({ logs }) {
   if (!logs || logs.length === 0) return null;
@@ -108,7 +110,7 @@ function ReportDetail() {
   };
 
   const formatDate = (dateStr) =>
-    new Date(dateStr).toLocaleDateString("en-PK", {
+    parseServerDate(dateStr).toLocaleDateString("en-PK", {
       day: "numeric", month: "long", year: "numeric",
       hour: "2-digit", minute: "2-digit",
     });
@@ -172,6 +174,10 @@ function ReportDetail() {
           />
         </section>
       )}
+
+      {/* Questions: private threads with the doctors who have access. Medical-center
+          uploads can be discussed once the patient approves them. */}
+      {report.is_approved !== false && <ReportThreads token={token} reportId={id} role="patient" />}
 
       {/* Integrity */}
       <section className="card card-pad">

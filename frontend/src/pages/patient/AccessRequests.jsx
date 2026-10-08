@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import StatusPill from "../../components/ui/StatusPill";
 import { doctorLabel, initials } from "../../adapters/patientStory";
+import { parseServerDate } from "../../utils/dates";
 
 // How the doctor was verified, so the patient can judge the request
 function VerificationNote({ request }) {
@@ -44,7 +45,7 @@ function DoctorAvatar({ name }) {
 }
 
 function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString("en-PK", {
+  return parseServerDate(dateStr).toLocaleDateString("en-PK", {
     day: "numeric",
     month: "short",
     year: "numeric",

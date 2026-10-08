@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getPatientReports, downloadReport } from "../../api/doctor";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageCircleQuestion } from "lucide-react";
+import { useUnreadThreads } from "../../context/useUnreadThreads";
+import { parseServerDate } from "../../utils/dates";
 
 function PatientReports() {
   const { token } = useAuth();
   const { patientId } = useParams();
+  const unreadThreads = useUnreadThreads(token);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(null);
@@ -65,11 +68,19 @@ function PatientReports() {
             <tbody className="divide-y divide-line">
               {reports.map((report) => (
                 <tr key={report.id}>
-                  <td className="px-5 py-4 font-bold text-ink">{report.original_filename || "Report"}</td>
+                  <td className="px-5 py-4">
+                    <p className="font-bold text-ink">{report.original_filename || "Report"}</p>
+                    {unreadThreads[report.id] > 0 && (
+                      <span className="pill pill-brand mt-1">
+                        <MessageCircleQuestion aria-hidden="true" size={14} />
+                        New message
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-4 capitalize text-ink-soft">{report.report_type?.replace(/_/g, " ") || "-"}</td>
                   <td className="px-5 py-4 text-ink-soft">
                     {report.uploaded_at || report.created_at
-                      ? new Date(report.uploaded_at || report.created_at).toLocaleDateString()
+                      ? parseServerDate(report.uploaded_at || report.created_at).toLocaleDateString()
                       : "-"}
                   </td>
                   <td className="px-5 py-4">

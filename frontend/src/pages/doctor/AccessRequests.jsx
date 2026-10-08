@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Plus } from "lucide-react";
 import { getMyAccessRequests, submitAccessRequest } from "../../api/doctor";
 import StatusPill from "../../components/ui/StatusPill";
+import { parseServerDate } from "../../utils/dates";
 
 function DoctorAccessRequests() {
   const { token } = useAuth();
@@ -53,7 +54,7 @@ function DoctorAccessRequests() {
   };
 
   const TONE = { pending: "warn", approved: "ok", denied: "bad", revoked: "plain" };
-  const fmt = (v) => (v ? new Date(v).toLocaleDateString() : "-");
+  const fmt = (v) => (v ? parseServerDate(v).toLocaleDateString() : "-");
 
   return (
     <div className="mx-auto max-w-5xl">

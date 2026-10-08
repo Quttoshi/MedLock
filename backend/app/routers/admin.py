@@ -70,7 +70,7 @@ def _doctor_item(d: Doctor) -> DoctorListItem:
         verified_at=d.verified_at,
         license_expires_at=d.license_expires_at,
         verification_note=d.verification_note,
-        medical_center_name=d.medical_center.name if d.medical_center else None,
+        medical_center_names=[a.medical_center.name for a in d.affiliations if a.status == "active" and a.medical_center],
         has_pending_request=not d.is_verified and any(r.status == "pending" for r in d.verification_requests),
     )
 
@@ -230,6 +230,7 @@ def list_medical_centers(
             email=c.user.email if c.user else "",
             license_number=c.license_number,
             address=c.address,
+            center_type=c.center_type,
             is_approved=c.is_approved,
             approved_at=c.approved_at,
             rejection_reason=c.rejection_reason,
@@ -272,6 +273,7 @@ def approve_medical_center(
         email=center.user.email if center.user else "",
         license_number=center.license_number,
         address=center.address,
+        center_type=center.center_type,
         is_approved=center.is_approved,
         approved_at=center.approved_at,
         rejection_reason=center.rejection_reason,
@@ -310,6 +312,7 @@ def reject_medical_center(
         email=center.user.email if center.user else "",
         license_number=center.license_number,
         address=center.address,
+        center_type=center.center_type,
         is_approved=center.is_approved,
         approved_at=center.approved_at,
         rejection_reason=center.rejection_reason,

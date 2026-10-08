@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { Users, BadgeCheck, FileText, Clock, ChevronRight, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getMCDoctors, getMCReports } from "../../api/medicalCenter";
 
 function MCDashboardHome() {
   const { token, user } = useAuth();
+  const { isLab } = useOutletContext() ?? {};
   const [stats, setStats] = useState({
     totalDoctors: "-",
     verifiedDoctors: "-",
@@ -29,9 +30,13 @@ function MCDashboardHome() {
       .catch(() => {});
   }, [token]);
 
-  const statCards = [
+  // Labs take no doctors, so their overview leaves out the doctor figures and page.
+  const doctorStats = [
     { label: "Doctors", value: stats.totalDoctors, Icon: Users, tone: "bg-brand-subtle text-brand" },
     { label: "Verified doctors", value: stats.verifiedDoctors, Icon: BadgeCheck, tone: "bg-ok-subtle text-ok-ink" },
+  ];
+  const statCards = [
+    ...(isLab ? [] : doctorStats),
     { label: "Reports uploaded", value: stats.totalReports, Icon: FileText, tone: "bg-brand-subtle text-brand" },
     { label: "Awaiting patient approval", value: stats.pendingReports, Icon: Clock, tone: "bg-warn-subtle text-warn-ink" },
   ];
@@ -39,7 +44,7 @@ function MCDashboardHome() {
   const quickActions = [
     { label: "Upload report", description: "Upload a diagnostic report for a patient", path: "/mc/upload" },
     { label: "My reports", description: "View all reports uploaded by your center", path: "/mc/reports" },
-    { label: "My doctors", description: "Doctors affiliated with your center", path: "/mc/doctors" },
+    ...(isLab ? [] : [{ label: "My doctors", description: "Doctors affiliated with your center", path: "/mc/doctors" }]),
   ];
 
   return (
@@ -49,7 +54,7 @@ function MCDashboardHome() {
       </h1>
       <p className="mt-3 text-sm text-muted">An overview of your medical center account.</p>
 
-      <dl className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <dl className={`mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 ${isLab ? "" : "xl:grid-cols-4"}`}>
         {statCards.map((stat) => {
           const StatIcon = stat.Icon;
           return (
@@ -67,7 +72,7 @@ function MCDashboardHome() {
       </dl>
 
       <h2 className="eyebrow mb-3 mt-10">Quick actions</h2>
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <ul className={`grid grid-cols-1 gap-4 ${isLab ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
         {quickActions.map((a) => (
           <li key={a.path}>
             <Link

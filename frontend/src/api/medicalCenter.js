@@ -6,6 +6,13 @@ const getHeaders = (token) => ({ Authorization: `Bearer ${token}` });
 export const getMCDoctors = (token) =>
   api.get("/mc/doctors", { headers: getHeaders(token) });
 
+export const getMCProfile = (token) =>
+  api.get("/mc/profile", { headers: getHeaders(token) });
+
+// End a doctor's affiliation with this center
+export const removeDoctor = (token, doctorId, reason) =>
+  api.post(`/mc/doctors/${doctorId}/remove`, { reason }, { headers: getHeaders(token) });
+
 export const getMCReports = (token) =>
   api.get("/mc/reports", { headers: getHeaders(token) });
 

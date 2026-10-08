@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any, List, Optional
 from datetime import date, datetime
 from uuid import UUID
 
@@ -29,7 +29,7 @@ class DoctorListItem(BaseModel):
     verified_at: Optional[datetime] = None
     license_expires_at: Optional[date] = None
     verification_note: Optional[str] = None
-    medical_center_name: Optional[str] = None
+    medical_center_names: List[str] = []
     has_pending_request: bool = False
 
     class Config:
@@ -62,6 +62,7 @@ class MedicalCenterListItem(BaseModel):
     email: str
     license_number: str
     address: str
+    center_type: str = "hospital"
     is_approved: bool
     approved_at: Optional[datetime] = None
     rejection_reason: Optional[str] = None

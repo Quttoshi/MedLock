@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getAdminAuditLogs } from "../../api/admin";
 import FilterChips from "../../components/ui/FilterChips";
+import { parseServerDate } from "../../utils/dates";
 
 const actionTone = {
   login: "pill-ok",
@@ -91,7 +92,7 @@ function AuditLogs() {
                   </td>
                   <td className="px-5 py-4 font-mono text-[13px] text-ink-soft">{log.ip_address || "-"}</td>
                   <td className="whitespace-nowrap px-5 py-4 text-ink-soft">
-                    {log.created_at ? new Date(log.created_at).toLocaleString() : "-"}
+                    {log.created_at ? parseServerDate(log.created_at).toLocaleString() : "-"}
                   </td>
                 </tr>
               ))}

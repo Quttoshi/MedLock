@@ -4,6 +4,7 @@ import api from "../../api/axios";
 import PasswordInput from "../../components/PasswordInput";
 import AuthShell from "../../components/shell/AuthShell";
 import { AlertCircle, ArrowLeft } from "lucide-react";
+import { CENTER_TYPES } from "../../constants/centerTypes";
 
 const ROLE_ENDPOINTS = {
   patient: "/auth/register",
@@ -39,7 +40,7 @@ function Field({ label, name, type = "text", placeholder, value, onChange, error
 const ROLE_LABELS = {
   patient: "Patient",
   doctor: "Doctor",
-  medical_center: "Hospital / Clinic",
+  medical_center: "Hospital, clinic or lab",
 };
 
 function RegisterPage() {
@@ -54,6 +55,7 @@ function RegisterPage() {
     specialization: "",
     license_number: "",
     address: "",
+    center_type: "hospital",
     date_of_birth: "",
     blood_group: "",
     gender: "",
@@ -127,6 +129,7 @@ function RegisterPage() {
       payload.center_name = formData.name;
       payload.license_number = formData.license_number;
       payload.address = formData.address;
+      payload.center_type = formData.center_type;
     }
 
     setLoading(true);
@@ -168,7 +171,7 @@ function RegisterPage() {
 
       <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-5">
         <Field
-          label={role === "medical_center" ? "Center or hospital name" : "Full name"}
+          label={role === "medical_center" ? "Center name" : "Full name"}
           name="name"
           placeholder={role === "medical_center" ? "City General Hospital" : "Muhammad Ali"}
           value={formData.name}
@@ -254,6 +257,17 @@ function RegisterPage() {
         {/* Medical Center extra fields */}
         {role === "medical_center" && (
           <>
+            <div>
+              <label htmlFor="f-center_type" className="field-label">Type</label>
+              <select id="f-center_type" name="center_type" value={formData.center_type} onChange={handleChange} className="field" aria-describedby="f-center_type-hint">
+                {CENTER_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <p id="f-center_type-hint" className="field-hint">
+                Hospitals and clinics can verify the doctors who work there. Labs upload reports only.
+              </p>
+            </div>
             <Field label="License number" name="license_number" placeholder="MC-98765" value={formData.license_number} onChange={handleChange} error={errors.license_number} />
             <Field label="Address" name="address" placeholder="123 Main St, Karachi" value={formData.address} onChange={handleChange} error={errors.address} />
           </>

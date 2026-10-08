@@ -1,8 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Building2, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { searchMedicalCenters, requestAffiliation, getMyAffiliations } from "../../api/doctor";
+import {
+  searchMedicalCenters, requestAffiliation, getMyAffiliations, getMyMemberships, leaveAffiliation,
+} from "../../api/doctor";
 import DoctorVerificationCard from "../../components/DoctorVerificationCard";
 import StatusPill from "../../components/ui/StatusPill";
+import { centerTypeLabel } from "../../constants/centerTypes";
+import { parseServerDate } from "../../utils/dates";
+
+const formatDate = (value) =>
+  parseServerDate(value).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
 
 function Affiliation() {
   const { token } = useAuth();
@@ -11,17 +19,31 @@ function Affiliation() {
   const [selected, setSelected] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [requests, setRequests] = useState([]);
+  const [memberships, setMemberships] = useState([]);
+  // Center whose leaving is being confirmed
+  const [leaving, setLeaving] = useState(null);
+  const [leaveBusy, setLeaveBusy] = useState(false);
+  const [leaveError, setLeaveError] = useState("");
+  // Bumped after leaving so the verification card reloads
+  const [verificationKey, setVerificationKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const debounceRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
+  const loadAffiliations = useCallback(() => {
     getMyAffiliations(token)
       .then((res) => setRequests(res.data))
       .catch(() => setRequests([]));
+    getMyMemberships(token)
+      .then((res) => setMemberships(res.data))
+      .catch(() => setMemberships([]));
   }, [token]);
+
+  useEffect(() => {
+    loadAffiliations();
+  }, [loadAffiliations]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -61,6 +83,27 @@ function Affiliation() {
   const alreadyRequested = () =>
     requests.some((r) => r.medical_center === selected?.name && r.status === "pending");
 
+  const alreadyMember = () => memberships.some((m) => m.id === selected?.id);
+
+  const handleLeave = async (center) => {
+    setLeaveBusy(true);
+    setLeaveError("");
+    try {
+      const res = await leaveAffiliation(token, center.id);
+      setLeaving(null);
+      setSuccess(
+        res.data.is_verified
+          ? `You left ${center.name}.`
+          : `You left ${center.name}. You no longer belong to a medical center, so your verification has ended.`
+      );
+      loadAffiliations();
+      setVerificationKey((k) => k + 1);
+    } catch (e) {
+      setLeaveError(e?.response?.data?.detail || "Could not leave this medical center.");
+    }
+    setLeaveBusy(false);
+  };
+
   const handleSubmit = async () => {
     if (!selected) { setError("Please select a medical center."); return; }
     setSubmitting(true);
@@ -71,8 +114,7 @@ function Affiliation() {
       setSuccess(`Affiliation request sent to ${selected.name}.`);
       setSelected(null);
       setQuery("");
-      const res = await getMyAffiliations(token);
-      setRequests(res.data);
+      loadAffiliations();
     } catch (e) {
       setError(e?.response?.data?.detail || "Request failed. Please try again.");
     }
@@ -85,18 +127,79 @@ function Affiliation() {
     <div className="mx-auto max-w-3xl space-y-5">
       <div>
         <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
-          Hospital <em>affiliation</em>
+          Your <em>medical centers</em>
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted">
-          Request affiliation with a medical center. They will review your license and specialization.
+          Join the hospitals and clinics you work at. You can belong to more than one, for example a hospital and
+          your own clinic. Each center checks your license before approving you.
         </p>
       </div>
 
-      <DoctorVerificationCard token={token} />
+      <DoctorVerificationCard key={verificationKey} token={token} />
+
+      {/* Current memberships */}
+      <section className="card card-pad" aria-labelledby="memberships-heading">
+        <h2 id="memberships-heading" className="display text-xl text-ink">My medical centers</h2>
+        {memberships.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted">You do not belong to a medical center yet.</p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {memberships.map((m) => (
+              <li key={m.id} className="card-inset px-4 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-subtle text-brand">
+                      <Building2 aria-hidden="true" size={18} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-ink">{m.name}</p>
+                      <p className="text-sm text-muted">
+                        {centerTypeLabel(m.center_type)} · Joined {formatDate(m.joined_at)}
+                      </p>
+                    </div>
+                  </div>
+                  {leaving !== m.id && (
+                    <button
+                      type="button"
+                      onClick={() => { setLeaving(m.id); setLeaveError(""); }}
+                      className="btn btn-ghost btn-sm"
+                    >
+                      <LogOut aria-hidden="true" size={16} />
+                      Leave
+                    </button>
+                  )}
+                </div>
+                {leaving === m.id && (
+                  <div className="mt-3 space-y-2.5 border-t border-line pt-3">
+                    <p className="text-sm leading-5 text-ink-soft">
+                      Leave {m.name}? The center is notified. If it verified your license and you belong to no other
+                      center, your verification ends.
+                    </p>
+                    {leaveError && <p role="alert" className="text-sm font-semibold text-bad-ink">{leaveError}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleLeave(m)}
+                        disabled={leaveBusy}
+                        className="btn btn-danger btn-sm"
+                      >
+                        {leaveBusy ? "Leaving..." : "Leave center"}
+                      </button>
+                      <button type="button" onClick={() => setLeaving(null)} className="btn btn-ghost btn-sm">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* Request form */}
       <section className="card card-pad">
-        <h2 className="display text-xl text-ink">New affiliation request</h2>
+        <h2 className="display text-xl text-ink">Join a hospital or clinic</h2>
 
         <div className="mt-4">
           <label htmlFor="center-search" className="field-label">Medical center</label>
@@ -107,7 +210,7 @@ function Affiliation() {
               value={query}
               onChange={handleQueryChange}
               onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-              placeholder="Type to search medical centers"
+              placeholder="Type to search hospitals and clinics"
               autoComplete="off"
               className="field"
             />
@@ -121,7 +224,9 @@ function Affiliation() {
                       className="w-full px-4 py-3 text-left transition-colors hover:bg-inset"
                     >
                       <span className="block text-sm font-bold text-ink">{c.name}</span>
-                      {c.address && <span className="block text-sm text-muted">{c.address}</span>}
+                      <span className="block text-sm text-muted">
+                        {centerTypeLabel(c.center_type)}{c.address ? ` · ${c.address}` : ""}
+                      </span>
                     </button>
                   </li>
                 ))}
@@ -136,10 +241,16 @@ function Affiliation() {
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={submitting || !selected || alreadyRequested()}
+          disabled={submitting || !selected || alreadyRequested() || alreadyMember()}
           className="btn btn-primary mt-5 w-full"
         >
-          {submitting ? "Sending..." : alreadyRequested() ? "Already requested" : "Send affiliation request"}
+          {submitting
+            ? "Sending..."
+            : alreadyMember()
+            ? "Already a member"
+            : alreadyRequested()
+            ? "Already requested"
+            : "Send affiliation request"}
         </button>
       </section>
 
@@ -158,7 +269,7 @@ function Affiliation() {
                     <p className="mt-0.5 text-sm font-semibold text-bad-ink">Rejected: {req.rejection_reason}</p>
                   )}
                   <p className="mt-0.5 text-sm text-muted">
-                    {new Date(req.requested_at).toLocaleDateString("en-PK", {
+                    {parseServerDate(req.requested_at).toLocaleDateString("en-PK", {
                       day: "numeric", month: "short", year: "numeric",
                     })}
                   </p>

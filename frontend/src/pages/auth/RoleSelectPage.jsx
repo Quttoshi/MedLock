@@ -19,8 +19,8 @@ const roles = [
   },
   {
     key: "medical_center",
-    title: "Hospital / Clinic",
-    description: "Upload reports on behalf of patients and manage your affiliated doctors.",
+    title: "Hospital, clinic or lab",
+    description: "Upload reports on behalf of patients. Hospitals and clinics also verify the doctors who work there.",
     Icon: Building2,
     badge: "Requires admin approval",
   },

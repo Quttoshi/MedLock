@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getAdminMedicalCenters, approveMC, rejectMC } from "../../api/admin";
 import FilterChips from "../../components/ui/FilterChips";
 import StatusPill from "../../components/ui/StatusPill";
+import { centerTypeLabel } from "../../constants/centerTypes";
 
 const MC_FILTERS = ["all", "pending", "approved", "rejected"].map((f) => ({ value: f, label: f }));
 
@@ -81,7 +82,10 @@ function MedicalCenters() {
             <tbody className="divide-y divide-line">
               {mcs.map((mc) => (
                 <tr key={mc.id}>
-                  <td className="px-5 py-4 font-bold text-ink">{mc.name}</td>
+                  <td className="px-5 py-4">
+                    <p className="font-bold text-ink">{mc.name}</p>
+                    <span className="pill pill-plain mt-1">{centerTypeLabel(mc.center_type)}</span>
+                  </td>
                   <td className="px-5 py-4 text-ink-soft">{mc.email}</td>
                   <td className="px-5 py-4 font-mono text-[13px] text-ink-soft">{mc.license_number || "-"}</td>
                   <td className="px-5 py-4">

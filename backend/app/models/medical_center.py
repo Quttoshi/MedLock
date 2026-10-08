@@ -7,6 +7,8 @@ from sqlalchemy.orm import relationship
 
 from app.database import Base
 
+CENTER_TYPES = ("hospital", "clinic", "lab")
+
 
 class MedicalCenter(Base):
     __tablename__ = "medical_centers"
@@ -16,6 +18,8 @@ class MedicalCenter(Base):
     name = Column(String, nullable=False)
     license_number = Column(String, unique=True, nullable=False)
     address = Column(String, nullable=False)
+    # hospital | clinic | lab. Labs only upload reports and have no affiliated doctors.
+    center_type = Column(String, default="hospital", server_default="hospital", nullable=False)
     is_approved = Column(Boolean, default=False, nullable=False)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
@@ -25,6 +29,8 @@ class MedicalCenter(Base):
     # Relationships
     user = relationship("User", back_populates="medical_center")
     approved_by_admin = relationship("Admin", back_populates="approved_medical_centers")
-    doctors = relationship("Doctor", back_populates="medical_center")
+    affiliations = relationship(
+        "DoctorAffiliation", back_populates="medical_center", cascade="all, delete-orphan", passive_deletes=True,
+    )
     medical_reports = relationship("MedicalReport", back_populates="medical_center")
     affiliation_requests = relationship("AffiliationRequest", back_populates="medical_center")

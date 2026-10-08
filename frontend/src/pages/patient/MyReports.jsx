@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Plus, Search, Clock, ChevronRight } from "lucide-react";
+import { FileText, Plus, Search, Clock, ChevronRight, MessageCircleQuestion } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import { sourceLabel } from "../../adapters/patientStory";
+import { useUnreadThreads } from "../../context/useUnreadThreads";
+import { parseServerDate } from "../../utils/dates";
 
 function MyReports() {
   const { token } = useAuth();
+  const unreadThreads = useUnreadThreads(token);
 
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +75,7 @@ function MyReports() {
 
   // ── Format Date ──────────────────────────────────────
   const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString("en-PK", {
+    return parseServerDate(dateStr).toLocaleDateString("en-PK", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -213,6 +216,12 @@ function MyReports() {
                   </span>
                   <span className="mt-2 flex flex-wrap items-center gap-2">
                     <span className="pill pill-plain">{report.report_type}</span>
+                    {unreadThreads[report.id] > 0 && (
+                      <span className="pill pill-brand">
+                        <MessageCircleQuestion aria-hidden="true" size={14} />
+                        New {unreadThreads[report.id] === 1 ? "message" : "messages"}
+                      </span>
+                    )}
                     <span className="hash">SHA-256 {report.file_hash_sha256?.slice(0, 16)}...</span>
                   </span>
                 </span>

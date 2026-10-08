@@ -1,8 +1,9 @@
 """Doctor license verification.
 
 Two routes lead to a verified doctor:
-- affiliated doctors are verified by their medical center when it approves their
-  affiliation and the license number on their credential matches;
+- affiliated doctors are verified by a medical center when it approves their
+  affiliation and the license number on their credential matches (they stay verified
+  while they belong to at least one center; see affiliation_service);
 - independent doctors submit a request, and an admin checks their registration on the
   public PMDC register (https://pmdc.pk) before approving or rejecting it.
 Verification records who verified the doctor, how, and until when the license is valid.
@@ -41,12 +42,24 @@ def _bad_request(detail: str) -> HTTPException:
 
 # ── Verification state ────────────────────────────────────────────────────────
 
+def _current_centers(doctor: Doctor) -> list:
+    return [a.medical_center for a in (doctor.affiliations or []) if a.status == "active" and a.medical_center]
+
+
+def _verifying_center_name(doctor: Doctor) -> str:
+    verifier = doctor.verified_by.medical_center if doctor.verified_by else None
+    if verifier:
+        return verifier.name
+    # Verified before the verifying center was recorded: name a current center.
+    centers = _current_centers(doctor)
+    return centers[0].name if centers else "their medical center"
+
+
 def verification_label(doctor: Doctor) -> str:
     if not doctor.is_verified:
         return "Not verified"
     if doctor.verification_method == "medical_center":
-        center = doctor.medical_center.name if doctor.medical_center else "their medical center"
-        return f"Verified by {center}"
+        return f"Verified by {_verifying_center_name(doctor)}"
     if doctor.verification_method == "admin":
         return "License verified via PMDC by MedLock"
     return "Verified"
@@ -62,7 +75,10 @@ def verification_summary(doctor: Doctor) -> dict:
         "license_number": doctor.license_number,
         "license_expires_at": doctor.license_expires_at,
         "note": doctor.verification_note,
-        "affiliated": doctor.medical_center_id is not None,
+        "affiliated": bool(_current_centers(doctor)),
+        "medical_centers": [
+            {"id": str(c.id), "name": c.name, "center_type": c.center_type} for c in _current_centers(doctor)
+        ],
         "latest_request": request_summary(latest) if latest else None,
     }
 
