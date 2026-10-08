@@ -17,10 +17,11 @@ from datetime import datetime, timezone
 
 from app.services.encryption_service import decrypt_file
 from app.services.storage_service import get_supabase, BUCKET_NAME
-from app.services.access_request_service import check_doctor_has_access
+from app.services.access_request_service import check_doctor_has_access, display_status
 from app.services.audit_service import log_action
 from app.services.blockchain_service import verify_report_integrity
 from app.services import affiliation_service as affiliations
+from app.services import center_verification_service as center_checks
 from app.services import doctor_verification_service as verification
 
 router = APIRouter(prefix="/doctor", tags=["Doctor"])
@@ -55,7 +56,8 @@ def get_accessible_patients(
     current_user: User = Depends(require_role(["doctor"])),
     db: Session = Depends(get_db),
 ):
-    """Returns distinct patients whose reports this doctor has approved access to."""
+    """Returns distinct patients whose reports this doctor currently has access to
+    (approved and not expired)."""
     doctor = _get_doctor(current_user, db)
 
     approved = (
@@ -64,13 +66,14 @@ def get_accessible_patients(
             AccessRequest.doctor_id == doctor.id,
             AccessRequest.status == "approved",
         )
+        .order_by(AccessRequest.decided_at.desc())
         .all()
     )
 
     seen_patients = {}
     for req in approved:
         patient = req.patient
-        if not patient or str(patient.id) in seen_patients:
+        if not patient or str(patient.id) in seen_patients or display_status(req) == "expired":
             continue
         seen_patients[str(patient.id)] = {
             "id": str(patient.id),
@@ -97,7 +100,9 @@ def get_patient_reports(
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
 
-    reports = db.query(MedicalReport).filter(MedicalReport.patient_id == patient.id).all()
+    reports = db.query(MedicalReport).filter(MedicalReport.patient_id == patient.id).order_by(
+        MedicalReport.uploaded_at.desc()
+    ).all()
 
     accessible = []
     for report in reports:
@@ -125,13 +130,14 @@ def list_medical_centers(
     q = db.query(MedicalCenter).filter(MedicalCenter.is_approved == True, MedicalCenter.center_type != "lab")
     if search:
         q = q.filter(MedicalCenter.name.ilike(f"%{search}%"))
-    centers = q.all()
+    centers = q.order_by(MedicalCenter.name).all()
     return [
         {
             "id": str(c.id),
             "name": c.name,
             "address": c.address,
             "center_type": c.center_type,
+            "licence_label": center_checks.licence_label(c),
         }
         for c in centers
     ]
@@ -184,7 +190,9 @@ def my_affiliation_requests(
 ):
     """View all affiliation requests submitted by this doctor."""
     doctor = _get_doctor(current_user, db)
-    requests = db.query(AffiliationRequest).filter(AffiliationRequest.doctor_id == doctor.id).all()
+    requests = db.query(AffiliationRequest).filter(AffiliationRequest.doctor_id == doctor.id).order_by(
+        AffiliationRequest.requested_at.desc()
+    ).all()
     return [
         {
             "id": str(r.id),

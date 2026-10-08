@@ -227,6 +227,7 @@ function Affiliation() {
                       <span className="block text-sm text-muted">
                         {centerTypeLabel(c.center_type)}{c.address ? ` · ${c.address}` : ""}
                       </span>
+                      {c.licence_label && <span className="block text-[13px] text-ok-ink">{c.licence_label}</span>}
                     </button>
                   </li>
                 ))}

@@ -36,3 +36,20 @@ def test_unapproved_medical_center_upload_is_hidden_from_doctor():
 def test_no_access_request_means_no_access():
     report = _report()
     assert check_doctor_has_access(doctor, report.id, _db(report, None)) is False
+
+
+def test_expired_access_is_refused_and_shown_as_expired():
+    from app.services.access_request_service import display_status
+    report = _report()
+    access = SimpleNamespace(status="approved", expires_at=datetime.utcnow() - timedelta(minutes=1))
+    assert check_doctor_has_access(doctor, report.id, _db(report, access)) is False
+    # Expiry is not recorded as a revocation by the patient.
+    assert access.status == "approved"
+    assert display_status(access) == "expired"
+
+
+def test_current_and_other_statuses_are_shown_as_stored():
+    from app.services.access_request_service import display_status
+    assert display_status(_access()) == "approved"
+    for status in ("pending", "denied", "revoked"):
+        assert display_status(SimpleNamespace(status=status, expires_at=None)) == status

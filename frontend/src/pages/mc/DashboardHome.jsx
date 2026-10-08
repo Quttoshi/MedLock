@@ -6,7 +6,7 @@ import { getMCDoctors, getMCReports } from "../../api/medicalCenter";
 
 function MCDashboardHome() {
   const { token, user } = useAuth();
-  const { isLab } = useOutletContext() ?? {};
+  const { isLab, profile } = useOutletContext() ?? {};
   const [stats, setStats] = useState({
     totalDoctors: "-",
     verifiedDoctors: "-",
@@ -53,6 +53,12 @@ function MCDashboardHome() {
         Welcome, <em>{user?.name}</em>
       </h1>
       <p className="mt-3 text-sm text-muted">An overview of your medical center account.</p>
+      {profile?.licence_label && (
+        <span className="pill pill-ok mt-3">
+          <ShieldCheck aria-hidden="true" size={14} />
+          {profile.licence_label}
+        </span>
+      )}
 
       <dl className={`mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 ${isLab ? "" : "xl:grid-cols-4"}`}>
         {statCards.map((stat) => {

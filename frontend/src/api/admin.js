@@ -12,8 +12,11 @@ export const getAdminDoctors = (token, verified = "") =>
 export const getAdminMedicalCenters = (token, approved = "") =>
   api.get(`/admin/medical-centers${approved !== "" ? `?approved=${approved}` : ""}`, { headers: getHeaders(token) });
 
-export const getAdminAuditLogs = (token, action = "", limit = 50, offset = 0) =>
-  api.get(`/admin/audit-logs?limit=${limit}&offset=${offset}${action ? `&action=${action}` : ""}`, { headers: getHeaders(token) });
+// category groups related actions (accounts, reports, access, doctors, centers, questions)
+export const getAdminAuditLogs = (token, category = "", limit = 50, offset = 0) =>
+  api.get(`/admin/audit-logs?limit=${limit}&offset=${offset}${category ? `&category=${category}` : ""}`, {
+    headers: getHeaders(token),
+  });
 
 // Doctor actions
 // Admin override; the reason is recorded and shared with the doctor
@@ -48,8 +51,13 @@ export const rejectVerificationRequest = (token, id, reason) =>
   api.patch(`/admin/doctor-verification-requests/${id}/reject`, { reason }, { headers: getHeaders(token) });
 
 // Medical center actions
-export const approveMC = (token, id) =>
-  api.patch(`/admin/medical-centers/${id}/approve`, {}, { headers: getHeaders(token) });
+// The admin confirms the licence expiry from the regulator's register and notes how it was checked
+export const approveMC = (token, id, licenseExpiresAt, note) =>
+  api.patch(
+    `/admin/medical-centers/${id}/approve`,
+    { license_expires_at: licenseExpiresAt, note },
+    { headers: getHeaders(token) }
+  );
 
 export const rejectMC = (token, id, reason) =>
   api.patch(`/admin/medical-centers/${id}/reject?reason=${encodeURIComponent(reason)}`, {}, { headers: getHeaders(token) });

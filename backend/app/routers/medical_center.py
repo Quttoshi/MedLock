@@ -14,7 +14,9 @@ from app.models.medical_center import MedicalCenter
 from app.models.medical_report import MedicalReport
 from app.models.patient import Patient
 from app.models.user import User
+from app.schemas.medical_center import UpdateRegistrationRequest
 from app.services import affiliation_service as affiliations
+from app.services import center_verification_service as center_checks
 from app.services.audit_service import log_action
 from app.services.blockchain_service import log_event as blockchain_log
 from app.services.encryption_service import encrypt_file, sha256_hash
@@ -60,8 +62,30 @@ def get_profile(
         "address": mc.address,
         "center_type": mc.center_type,
         "is_approved": mc.is_approved,
+        "rejection_reason": mc.rejection_reason,
+        **center_checks.licence_summary(mc),
         "approved_at": mc.approved_at,
     }
+
+
+@router.patch("/registration")
+def update_registration(
+    body: UpdateRegistrationRequest,
+    request: Request = None,
+    current_user: User = Depends(require_role(["medical_center"])),
+    db: Session = Depends(get_db),
+):
+    """A center waiting for approval (or rejected) corrects its licence details and goes
+    back for review."""
+    mc = db.query(MedicalCenter).filter(MedicalCenter.user_id == current_user.id).first()
+    if not mc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical center profile not found")
+    center_checks.resubmit(mc, body.regulator, body.license_number, body.license_expires_at, body.address, db)
+    log_action(
+        db, action="medical_center_resubmitted", performed_by=current_user.id, entity_type="medical_center",
+        entity_id=mc.id, details={"regulator": mc.regulator, "license_number": mc.license_number}, request=request,
+    )
+    return {"status": center_checks.center_status(mc), **center_checks.licence_summary(mc)}
 
 
 @router.get("/doctors")
@@ -347,7 +371,9 @@ def get_uploaded_reports(
 ):
     """List all reports this medical center has uploaded."""
     mc = _get_mc(current_user, db)
-    reports = db.query(MedicalReport).filter(MedicalReport.medical_center_id == mc.id).all()
+    reports = db.query(MedicalReport).filter(MedicalReport.medical_center_id == mc.id).order_by(
+        MedicalReport.uploaded_at.desc()
+    ).all()
     return [
         {
             "id": str(r.id),

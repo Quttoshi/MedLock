@@ -9,6 +9,10 @@ export const getMCDoctors = (token) =>
 export const getMCProfile = (token) =>
   api.get("/mc/profile", { headers: getHeaders(token) });
 
+// A pending or rejected center corrects its licence details and goes back for review
+export const updateRegistration = (token, data) =>
+  api.patch("/mc/registration", data, { headers: getHeaders(token) });
+
 // End a doctor's affiliation with this center
 export const removeDoctor = (token, doctorId, reason) =>
   api.post(`/mc/doctors/${doctorId}/remove`, { reason }, { headers: getHeaders(token) });

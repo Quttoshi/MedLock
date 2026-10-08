@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, String, Boolean, Date, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -20,6 +20,13 @@ class MedicalCenter(Base):
     address = Column(String, nullable=False)
     # hospital | clinic | lab. Labs only upload reports and have no affiliated doctors.
     center_type = Column(String, default="hospital", server_default="hospital", nullable=False)
+    # Provincial regulator that licensed the center (PHC, SHCC, KPHCC, IHRA). Centers
+    # approved before licence checks have none.
+    regulator = Column(String, nullable=True)
+    # Confirmed by the admin from the regulator's register; approval lapses after it.
+    license_expires_at = Column(Date, nullable=True)
+    # How the admin checked the licence, e.g. "PHC portal - name and address match"
+    verification_note = Column(String, nullable=True)
     is_approved = Column(Boolean, default=False, nullable=False)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
     approved_at = Column(DateTime, nullable=True)

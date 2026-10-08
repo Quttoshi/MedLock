@@ -14,6 +14,7 @@ from app.models.admin import Admin
 from app.models.audit_log import AuditLog
 from app.schemas.admin import (
     AdminRevokeDoctorRequest,
+    ApproveCenterRequest,
     AdminVerifyDoctorRequest,
     ApproveVerificationRequest,
     AuditLogItem,
@@ -23,6 +24,7 @@ from app.schemas.admin import (
     UserListItem,
 )
 from app.models.doctor_verification_request import DoctorVerificationRequest
+from app.services import center_verification_service as center_checks
 from app.services import doctor_verification_service as verification
 from app.services.audit_service import log_action
 from app.services.notification_service import create_notification
@@ -88,10 +90,10 @@ def list_doctors(
     current_user: User = Depends(require_role(["admin"])),
     db: Session = Depends(get_db),
 ):
-    q = db.query(Doctor)
+    q = db.query(Doctor).join(User, Doctor.user_id == User.id)
     if verified is not None:
         q = q.filter(Doctor.is_verified == verified)
-    return [_doctor_item(d) for d in q.all()]
+    return [_doctor_item(d) for d in q.order_by(User.created_at.desc()).all()]
 
 
 @router.patch("/doctors/{doctor_id}/verify", response_model=DoctorListItem)
@@ -211,6 +213,21 @@ def reject_verification_request(
 
 # ── Medical Centers ──────────────────────────────────────
 
+def _center_item(c: MedicalCenter) -> MedicalCenterListItem:
+    return MedicalCenterListItem(
+        id=c.id,
+        user_id=c.user_id,
+        name=c.name,
+        email=c.user.email if c.user else "",
+        address=c.address,
+        center_type=c.center_type,
+        is_approved=c.is_approved,
+        approved_at=c.approved_at,
+        rejection_reason=c.rejection_reason,
+        **center_checks.admin_summary(c),
+    )
+
+
 @router.get("/medical-centers", response_model=List[MedicalCenterListItem])
 def list_medical_centers(
     approved: Optional[bool] = Query(None, description="Filter by approval status"),
@@ -220,27 +237,13 @@ def list_medical_centers(
     q = db.query(MedicalCenter)
     if approved is not None:
         q = q.filter(MedicalCenter.is_approved == approved)
-    centers = q.all()
-    result = []
-    for c in centers:
-        result.append(MedicalCenterListItem(
-            id=c.id,
-            user_id=c.user_id,
-            name=c.name,
-            email=c.user.email if c.user else "",
-            license_number=c.license_number,
-            address=c.address,
-            center_type=c.center_type,
-            is_approved=c.is_approved,
-            approved_at=c.approved_at,
-            rejection_reason=c.rejection_reason,
-        ))
-    return result
+    return [_center_item(c) for c in q.order_by(MedicalCenter.created_at.desc()).all()]
 
 
 @router.patch("/medical-centers/{center_id}/approve", response_model=MedicalCenterListItem)
 def approve_medical_center(
     center_id: UUID,
+    body: ApproveCenterRequest,
     request: Request,
     current_user: User = Depends(require_role(["admin"])),
     db: Session = Depends(get_db),
@@ -248,36 +251,22 @@ def approve_medical_center(
     center = db.query(MedicalCenter).filter(MedicalCenter.id == center_id).first()
     if not center:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical center not found")
-    if center.is_approved:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Medical center is already approved")
 
     admin = db.query(Admin).filter(Admin.user_id == current_user.id).first()
-    center.is_approved = True
-    center.approved_by = admin.id if admin else None
-    center.approved_at = datetime.utcnow()
-    center.rejection_reason = None
-    db.commit()
-    db.refresh(center)
+    center_checks.approve(center, admin.id if admin else None, body.license_expires_at, body.note, db)
 
     log_action(db, action="medical_center_approved", performed_by=current_user.id,
-               entity_type="medical_center", entity_id=center.id, request=request)
+               entity_type="medical_center", entity_id=center.id,
+               details={"regulator": center.regulator, "license_expires_at": str(center.license_expires_at),
+                        "note": center.verification_note},
+               request=request)
     create_notification(
         db, center.user_id, "medical_center_approved",
-        f"Your medical center '{center.name}' has been approved. You can now use MedLock.",
+        f"Your medical center '{center.name}' has been approved after checking its {center.regulator} licence. "
+        "You can now use MedLock.",
     )
 
-    return MedicalCenterListItem(
-        id=center.id,
-        user_id=center.user_id,
-        name=center.name,
-        email=center.user.email if center.user else "",
-        license_number=center.license_number,
-        address=center.address,
-        center_type=center.center_type,
-        is_approved=center.is_approved,
-        approved_at=center.approved_at,
-        rejection_reason=center.rejection_reason,
-    )
+    return _center_item(center)
 
 
 @router.patch("/medical-centers/{center_id}/reject", response_model=MedicalCenterListItem)
@@ -305,25 +294,33 @@ def reject_medical_center(
         f"Your medical center registration for '{center.name}' was rejected. Reason: {reason}",
     )
 
-    return MedicalCenterListItem(
-        id=center.id,
-        user_id=center.user_id,
-        name=center.name,
-        email=center.user.email if center.user else "",
-        license_number=center.license_number,
-        address=center.address,
-        center_type=center.center_type,
-        is_approved=center.is_approved,
-        approved_at=center.approved_at,
-        rejection_reason=center.rejection_reason,
-    )
+    return _center_item(center)
 
 
 # ── Audit Logs ───────────────────────────────────────────
 
+# Groups of related audit actions, for the audit log's filters.
+AUDIT_CATEGORIES = {
+    "accounts": ("register", "email_verified", "login", "logout"),
+    "reports": (
+        "report_upload", "mc_report_upload", "imaging_upload", "mc_imaging_upload",
+        "report_approved", "report_rejected", "integrity_verified",
+    ),
+    "access": ("access_request_submitted", "access_approved", "access_denied", "access_revoked"),
+    "doctors": (
+        "doctor_verified", "doctor_unverified", "doctor_verified_by_mc", "doctor_verification_requested",
+        "doctor_verification_approved", "doctor_verification_rejected", "doctor_verification_failed",
+        "doctor_certificate_viewed", "affiliation_approved", "affiliation_rejected",
+        "affiliation_left", "affiliation_removed",
+    ),
+    "centers": ("medical_center_approved", "medical_center_rejected", "medical_center_resubmitted"),
+    "questions": ("thread_started", "thread_resolved", "thread_reopened"),
+}
+
 @router.get("/audit-logs", response_model=List[AuditLogItem])
 def get_audit_logs(
     action: Optional[str] = Query(None, description="Filter by action type"),
+    category: Optional[str] = Query(None, description="Filter by a group of related actions"),
     limit: int = Query(50, le=200),
     offset: int = Query(0),
     current_user: User = Depends(require_role(["admin"])),
@@ -332,6 +329,10 @@ def get_audit_logs(
     q = db.query(AuditLog)
     if action:
         q = q.filter(AuditLog.action == action)
+    if category:
+        if category not in AUDIT_CATEGORIES:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown audit category")
+        q = q.filter(AuditLog.action.in_(AUDIT_CATEGORIES[category]))
     logs = q.order_by(AuditLog.created_at.desc()).offset(offset).limit(limit).all()
 
     result = []

@@ -26,6 +26,7 @@ EMAIL_TITLES = {
     "medical_center_approved": "Your medical center has been approved",
     "medical_center_rejected": "Update on your medical center registration",
     "medical_center_registered": "A new medical center is awaiting approval",
+    "medical_center_licence_expired": "Your center's licence has expired",
     "report_consent_approved": "A patient approved your uploaded report",
     "report_consent_rejected": "A patient declined your uploaded report",
     "affiliation_approved": "Your affiliation request was approved",
@@ -66,6 +67,7 @@ DEFAULT_LINKS = {
     "medical_center": {
         "medical_center_approved": "/mc/dashboard",
         "medical_center_rejected": "/mc/dashboard",
+        "medical_center_licence_expired": "/mc/dashboard",
         "report_consent_approved": "/mc/reports",
         "report_consent_rejected": "/mc/reports",
         "affiliation_ended": "/mc/doctors",

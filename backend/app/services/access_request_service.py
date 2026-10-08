@@ -17,12 +17,20 @@ from app.services.blockchain_service import log_event as blockchain_log
 ACCESS_EXPIRY_DAYS = 30
 
 
+def display_status(req: AccessRequest) -> str:
+    """The stored status, except that an approval past its expiry shows as "expired",
+    so it is not listed with current approvals or confused with a patient's revocation."""
+    if req.status == "approved" and _is_expired(req):
+        return "expired"
+    return req.status
+
+
 def _build_response(req: AccessRequest) -> AccessRequestResponse:
     patient_user = req.patient.user if req.patient else None
     doctor_user = req.doctor.user if req.doctor else None
     return AccessRequestResponse(
         id=req.id,
-        status=req.status,
+        status=display_status(req),
         reason=req.reason or "",
         requested_at=req.requested_at,
         decided_at=req.decided_at,
@@ -105,7 +113,9 @@ def get_requests_for_patient(current_user: User, db: Session) -> list[AccessRequ
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
 
-    requests = db.query(AccessRequest).filter(AccessRequest.patient_id == patient.id).all()
+    requests = db.query(AccessRequest).filter(AccessRequest.patient_id == patient.id).order_by(
+        AccessRequest.requested_at.desc()
+    ).all()
     return [_build_response(r) for r in requests]
 
 
@@ -114,7 +124,9 @@ def get_requests_for_doctor(current_user: User, db: Session) -> list[AccessReque
     if not doctor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor profile not found")
 
-    requests = db.query(AccessRequest).filter(AccessRequest.doctor_id == doctor.id).all()
+    requests = db.query(AccessRequest).filter(AccessRequest.doctor_id == doctor.id).order_by(
+        AccessRequest.requested_at.desc()
+    ).all()
     return [_build_response(r) for r in requests]
 
 
@@ -204,15 +216,9 @@ def check_doctor_has_access(doctor: Doctor, report_id: uuid.UUID, db: Session) -
         AccessRequest.status == "approved",
     ).first()
 
-    if not req:
-        return False
-
-    if _is_expired(req):
-        req.status = "revoked"
-        db.commit()
-        return False
-
-    return True
+    # An expired approval keeps its stored status and is shown as "expired"
+    # (see display_status); it no longer grants access.
+    return bool(req) and not _is_expired(req)
 
 
 def _is_expired(req: AccessRequest) -> bool:

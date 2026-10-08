@@ -66,9 +66,26 @@ class MedicalCenterListItem(BaseModel):
     is_approved: bool
     approved_at: Optional[datetime] = None
     rejection_reason: Optional[str] = None
+    # Licence check
+    status: str = "pending"
+    regulator: Optional[str] = None
+    regulator_name: Optional[str] = None
+    regulator_url: Optional[str] = None
+    license_expires_at: Optional[date] = None
+    verification_note: Optional[str] = None
+    licence_label: Optional[str] = None
+    email_domain: str = ""
+    free_email: bool = False
 
     class Config:
         from_attributes = True
+
+
+class ApproveCenterRequest(BaseModel):
+    # Confirmed by the admin from the regulator's register
+    license_expires_at: date
+    # How the licence and the center's identity were checked
+    note: str
 
 
 class AuditLogItem(BaseModel):

@@ -23,6 +23,7 @@ class Notification(Base):
         "medical_center_approved",
         "medical_center_rejected",
         "medical_center_registered",
+        "medical_center_licence_expired",
         "report_consent_approved",
         "report_consent_rejected",
         "affiliation_approved",

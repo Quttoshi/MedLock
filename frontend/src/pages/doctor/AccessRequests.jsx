@@ -53,7 +53,7 @@ function DoctorAccessRequests() {
     setSubmitting(false);
   };
 
-  const TONE = { pending: "warn", approved: "ok", denied: "bad", revoked: "plain" };
+  const TONE = { pending: "warn", approved: "ok", denied: "bad", revoked: "plain", expired: "plain" };
   const fmt = (v) => (v ? parseServerDate(v).toLocaleDateString() : "-");
 
   return (
@@ -82,7 +82,7 @@ function DoctorAccessRequests() {
       )}
 
       <div role="group" aria-label="Filter requests by status" className="mt-6 inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1">
-        {["all", "pending", "approved", "denied", "revoked"].map((f) => (
+        {["all", "pending", "approved", "expired", "denied", "revoked"].map((f) => (
           <button
             key={f}
             type="button"
