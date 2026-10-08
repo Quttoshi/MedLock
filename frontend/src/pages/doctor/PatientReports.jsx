@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getPatientReports, downloadReport } from "../../api/doctor";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 function PatientReports() {
   const { token } = useAuth();
   const { patientId } = useParams();
-  const navigate = useNavigate();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(null);
@@ -35,70 +35,50 @@ function PatientReports() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => navigate("/doctor/patients")}
-          className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Patient Reports</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Approved medical records for this patient.</p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-5xl">
+      <Link to="/doctor/patients" className="link inline-flex items-center gap-2 text-sm no-underline hover:underline">
+        <ArrowLeft aria-hidden="true" size={16} />
+        Back to patients
+      </Link>
+      <h1 className="display mt-4 text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+        Patient <em>records</em>
+      </h1>
+      <p className="mt-3 text-sm text-muted">Approved medical records for this patient. Read only.</p>
 
       {loading ? (
-        <div className="p-10 text-center text-gray-400 text-sm">Loading...</div>
+        <p className="mt-10 text-center text-muted">Loading...</p>
       ) : reports.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
-          <p className="text-gray-500 text-sm">No reports available for this patient.</p>
+        <div className="card card-pad mt-8 text-center text-sm text-muted">
+          No reports available for this patient.
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="card mt-8 overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <caption className="sr-only">Approved reports for this patient</caption>
+            <thead className="!bg-inset">
               <tr>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Report Name</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Type</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Uploaded</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Source</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Actions</th>
+                {["Report", "Type", "Uploaded", "Source", "Actions"].map((h) => (
+                  <th key={h} scope="col" className="px-5 py-3 text-left text-[13px] font-bold !text-muted">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-line">
               {reports.map((report) => (
-                <tr key={report.id} className="hover:bg-gray-50 transition">
-                  <td className="px-5 py-4 font-medium text-gray-800">
-                    {report.original_filename || "Report"}
-                  </td>
-                  <td className="px-5 py-4 text-gray-500 capitalize">
-                    {report.report_type || "—"}
-                  </td>
-                  <td className="px-5 py-4 text-gray-500">
-                    {report.created_at
-                      ? new Date(report.created_at).toLocaleDateString()
-                      : "—"}
+                <tr key={report.id}>
+                  <td className="px-5 py-4 font-bold text-ink">{report.original_filename || "Report"}</td>
+                  <td className="px-5 py-4 capitalize text-ink-soft">{report.report_type?.replace(/_/g, " ") || "-"}</td>
+                  <td className="px-5 py-4 text-ink-soft">
+                    {report.uploaded_at || report.created_at
+                      ? new Date(report.uploaded_at || report.created_at).toLocaleDateString()
+                      : "-"}
                   </td>
                   <td className="px-5 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
-                      ${report.upload_source === "patient"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-green-100 text-green-700"
-                      }`}>
-                      {report.upload_source === "patient" ? "Patient" : "Medical Center"}
-                    </span>
+                    <span className="pill pill-plain">{report.upload_source === "patient" ? "Patient" : "Medical center"}</span>
                   </td>
                   <td className="px-5 py-4">
-                    <button
-  onClick={() => navigate(`/doctor/patients/${patientId}/reports/${report.id}/view`)}
-  className="px-3 py-1.5 bg-green-700 text-white text-xs rounded-lg hover:bg-green-800 transition"
->
-  View
-</button>
+                    <Link to={`/doctor/patients/${patientId}/reports/${report.id}/view`} className="btn btn-primary btn-sm">
+                      View
+                    </Link>
                   </td>
                 </tr>
               ))}
@@ -111,4 +91,3 @@ function PatientReports() {
 }
 
 export default PatientReports;
-

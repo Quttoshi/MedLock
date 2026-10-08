@@ -1,29 +1,37 @@
-import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import DoctorSidebar from "../components/DoctorSidebar";
-import DoctorNavbar from "../components/DoctorNavbar";
+import TopNav from "../components/shell/TopNav";
 import { NotificationProvider } from "../context/NotificationContext";
 
-function DoctorLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+const DOCTOR_LINKS = [
+  { label: "Overview", to: "/doctor/dashboard" },
+  { label: "Patients", to: "/doctor/patients" },
+  { label: "Requests", to: "/doctor/access-requests" },
+  { label: "Affiliation", to: "/doctor/affiliation" },
+];
 
+// Doctor shell (Template A top bar). Routes and the auth guard in App.jsx are unchanged.
+function DoctorLayout() {
   return (
     <NotificationProvider>
-      <div className="app-shell flex h-screen overflow-hidden">
-        <DoctorSidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+      <div className="min-h-screen bg-canvas font-sans text-ink">
+        <a
+          href="#main"
+          className="sr-only rounded-full bg-deep px-4 py-2 text-sm font-semibold text-deep-on focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
+        >
+          Skip to content
+        </a>
+        <TopNav
+          links={DOCTOR_LINKS}
+          homePath="/doctor/dashboard"
+          notificationsPath="/doctor/notifications"
+          badge="for doctors"
         />
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <DoctorNavbar onMenuClick={() => setSidebarOpen(true)} />
-          <main className="app-main flex-1 overflow-y-auto">
-            <Outlet />
-          </main>
-        </div>
+        <main id="main" className="app-main mx-auto w-full max-w-[1280px]">
+          <Outlet />
+        </main>
       </div>
     </NotificationProvider>
   );
 }
 
 export default DoctorLayout;
-

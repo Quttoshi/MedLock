@@ -1,0 +1,77 @@
+/*
+ * MedLock design tokens (Template A).
+ *
+ * Colors are stored as space separated RGB channels so Tailwind can apply
+ * opacity, for example bg-brand/10. Use them through Tailwind classes such as
+ * bg-surface, text-ink, border-line, and not by hand.
+ *
+ * Light is the default. Dark turns on when an element has
+ * data-theme="dark". The theme code in src/theme sets that on the html
+ * element: the saved choice first, otherwise the device setting.
+ *
+ * Contrast of every text and control pairing was checked against WCAG 2.1 AA
+ * (4.5:1 for text, 3:1 for icons, focus rings and control borders).
+ */
+
+:root {
+  --c-canvas: 238 242 240; /* #EEF2F0 */
+  --c-surface: 255 255 255; /* #FFFFFF */
+  --c-inset: 238 242 240; /* #EEF2F0 */
+  --c-ink: 28 43 39; /* #1C2B27 */
+  --c-ink-soft: 62 79 73; /* #3E4F49 */
+  --c-muted: 81 98 92; /* #51625C */
+  --c-line: 213 223 219; /* #D5DFDB */
+  --c-line-strong: 116 135 127; /* #74877F */
+  --c-brand: 15 95 89; /* #0F5F59 */
+  --c-brand-strong: 10 64 60; /* #0A403C */
+  --c-brand-subtle: 227 240 236; /* #E3F0EC */
+  --c-on-brand: 255 255 255; /* #FFFFFF */
+  --c-deep: 28 43 39; /* #1C2B27 */
+  --c-deep-2: 36 54 47; /* #24362F */
+  --c-on-deep: 255 255 255; /* #FFFFFF */
+  --c-on-deep-soft: 197 214 208; /* #C5D6D0 */
+  --c-on-deep-muted: 169 201 192; /* #A9C9C0 */
+  --c-ok: 26 127 85; /* #1A7F55 */
+  --c-ok-subtle: 215 235 230; /* #D7EBE6 */
+  --c-ok-ink: 10 64 60; /* #0A403C */
+  --c-warn: 183 121 31; /* #B7791F */
+  --c-warn-subtle: 251 239 213; /* #FBEFD5 */
+  --c-warn-ink: 107 70 0; /* #6B4600 */
+  --c-bad: 155 44 44; /* #9B2C2C */
+  --c-bad-subtle: 249 227 225; /* #F9E3E1 */
+  --c-bad-ink: 138 28 28; /* #8A1C1C */
+  --c-neutral-subtle: 230 234 232; /* #E6EAE8 */
+  --c-neutral-ink: 62 79 73; /* #3E4F49 */
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --c-canvas: 13 22 20; /* #0D1614 */
+  --c-surface: 19 31 28; /* #131F1C */
+  --c-inset: 26 41 37; /* #1A2925 */
+  --c-ink: 232 240 237; /* #E8F0ED */
+  --c-ink-soft: 192 208 202; /* #C0D0CA */
+  --c-muted: 157 178 171; /* #9DB2AB */
+  --c-line: 38 55 47; /* #26372F */
+  --c-line-strong: 111 137 129; /* #6F8981 */
+  --c-brand: 95 203 190; /* #5FCBBE */
+  --c-brand-strong: 138 221 210; /* #8ADDD2 */
+  --c-brand-subtle: 18 48 44; /* #12302C */
+  --c-on-brand: 6 32 29; /* #06201D */
+  --c-deep: 8 16 14; /* #08100E */
+  --c-deep-2: 16 28 25; /* #101C19 */
+  --c-on-deep: 232 240 237; /* #E8F0ED */
+  --c-on-deep-soft: 192 208 202; /* #C0D0CA */
+  --c-on-deep-muted: 157 178 171; /* #9DB2AB */
+  --c-ok: 76 195 138; /* #4CC38A */
+  --c-ok-subtle: 20 51 43; /* #14332B */
+  --c-ok-ink: 155 227 196; /* #9BE3C4 */
+  --c-warn: 224 169 60; /* #E0A93C */
+  --c-warn-subtle: 51 39 14; /* #33270E */
+  --c-warn-ink: 242 204 133; /* #F2CC85 */
+  --c-bad: 240 113 103; /* #F07167 */
+  --c-bad-subtle: 58 27 27; /* #3A1B1B */
+  --c-bad-ink: 244 169 163; /* #F4A9A3 */
+  --c-neutral-subtle: 31 45 41; /* #1F2D29 */
+  --c-neutral-ink: 183 199 193; /* #B7C7C1 */
+}

@@ -2,12 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { searchMedicalCenters, requestAffiliation, getMyAffiliations } from "../../api/doctor";
 import DoctorVerificationCard from "../../components/DoctorVerificationCard";
-
-const statusColors = {
-  pending: "bg-yellow-100 text-yellow-700",
-  approved: "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-700",
-};
+import StatusPill from "../../components/ui/StatusPill";
 
 function Affiliation() {
   const { token } = useAuth();
@@ -84,97 +79,100 @@ function Affiliation() {
     setSubmitting(false);
   };
 
+  const TONE = { pending: "warn", approved: "ok", rejected: "bad" };
+
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Hospital Affiliation</h1>
-        <p className="text-gray-500 text-sm mt-1">
+    <div className="mx-auto max-w-3xl space-y-5">
+      <div>
+        <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+          Hospital <em>affiliation</em>
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-muted">
           Request affiliation with a medical center. They will review your license and specialization.
         </p>
       </div>
 
       <DoctorVerificationCard token={token} />
 
-      {/* Request Form */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-5">
-        <h2 className="text-base font-semibold text-gray-700 mb-4">New Affiliation Request</h2>
+      {/* Request form */}
+      <section className="card card-pad">
+        <h2 className="display text-xl text-ink">New affiliation request</h2>
 
-        <div className="mb-4">
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Medical Center</label>
+        <div className="mt-4">
+          <label htmlFor="center-search" className="field-label">Medical center</label>
           <div className="relative" ref={dropdownRef}>
             <input
+              id="center-search"
               type="text"
               value={query}
               onChange={handleQueryChange}
               onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-              placeholder="Type to search medical centers..."
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+              placeholder="Type to search medical centers"
+              autoComplete="off"
+              className="field"
             />
             {showDropdown && suggestions.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+              <ul className="card card-lift absolute z-10 mt-1 w-full overflow-hidden">
                 {suggestions.map((c) => (
-                  <button
-                    key={c.id}
-                    onMouseDown={() => handleSelect(c)}
-                    className="w-full text-left px-4 py-2.5 hover:bg-green-50 transition"
-                  >
-                    <p className="text-sm font-medium text-gray-800">{c.name}</p>
-                    {c.address && <p className="text-xs text-gray-400">{c.address}</p>}
-                  </button>
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      onMouseDown={() => handleSelect(c)}
+                      className="w-full px-4 py-3 text-left transition-colors hover:bg-inset"
+                    >
+                      <span className="block text-sm font-bold text-ink">{c.name}</span>
+                      {c.address && <span className="block text-sm text-muted">{c.address}</span>}
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         </div>
 
-        {error && (
-          <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2">{error}</p>
-        )}
-        {success && (
-          <p className="mb-3 text-sm text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-2">{success}</p>
-        )}
+        {error && <p role="alert" className="mt-4 rounded-xl bg-bad-subtle p-3.5 text-sm font-semibold text-bad-ink">{error}</p>}
+        {success && <p role="status" className="mt-4 rounded-xl bg-ok-subtle p-3.5 text-sm font-semibold text-ok-ink">{success}</p>}
 
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={submitting || !selected || alreadyRequested()}
-          className="w-full py-2.5 bg-green-700 text-white text-sm font-medium rounded-xl hover:bg-green-800 transition disabled:opacity-50"
+          className="btn btn-primary mt-5 w-full"
         >
-          {submitting ? "Sending..." : alreadyRequested() ? "Already Requested" : "Send Affiliation Request"}
+          {submitting ? "Sending..." : alreadyRequested() ? "Already requested" : "Send affiliation request"}
         </button>
-      </div>
+      </section>
 
-      {/* My Requests */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-base font-semibold text-gray-700 mb-4">My Affiliation Requests</h2>
+      {/* My requests */}
+      <section className="card card-pad">
+        <h2 className="display text-xl text-ink">My affiliation requests</h2>
         {requests.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">No affiliation requests yet.</p>
+          <p className="py-6 text-center text-sm text-muted">No affiliation requests yet.</p>
         ) : (
-          <div className="space-y-3">
+          <ul className="mt-4 space-y-3">
             {requests.map((req) => (
-              <div key={req.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+              <li key={req.id} className="card-inset flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">{req.medical_center}</p>
+                  <p className="text-sm font-bold text-ink">{req.medical_center}</p>
                   {req.rejection_reason && (
-                    <p className="text-xs text-red-500 mt-0.5">Rejected: {req.rejection_reason}</p>
+                    <p className="mt-0.5 text-sm font-semibold text-bad-ink">Rejected: {req.rejection_reason}</p>
                   )}
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="mt-0.5 text-sm text-muted">
                     {new Date(req.requested_at).toLocaleDateString("en-PK", {
                       day: "numeric", month: "short", year: "numeric",
                     })}
                   </p>
                 </div>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColors[req.status] || "bg-gray-100 text-gray-600"}`}>
-                  {req.status}
-                </span>
-              </div>
+                <StatusPill tone={TONE[req.status] ?? "plain"}>
+                  <span className="capitalize">{req.status}</span>
+                </StatusPill>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }
 
 export default Affiliation;
-
-

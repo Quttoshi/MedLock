@@ -1,0 +1,118 @@
+/*
+ * Small shared component layer. Pages should reach for these classes before
+ * writing one off utility strings, so buttons, fields, cards and badges look
+ * the same everywhere. Everything here uses the tokens, so it follows light
+ * and dark automatically.
+ */
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex min-h-[40px] cursor-pointer select-none items-center justify-center gap-2 rounded-full border border-transparent px-5 text-sm font-semibold leading-none no-underline transition-colors duration-150;
+  }
+  .btn:focus-visible,
+  .link:focus-visible {
+    outline: 2px solid rgb(var(--c-brand));
+    outline-offset: 3px;
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    @apply cursor-not-allowed opacity-50;
+  }
+  .btn-primary {
+    @apply bg-brand text-brand-on hover:bg-brand-strong;
+  }
+  .btn-secondary {
+    @apply border-ink bg-transparent text-ink hover:bg-ink/5;
+  }
+  .btn-ghost {
+    @apply bg-transparent text-ink hover:bg-ink/5;
+  }
+  .btn-danger {
+    @apply bg-bad text-surface hover:opacity-90;
+  }
+  .btn-sm {
+    @apply min-h-[36px] px-3.5 text-[13px];
+  }
+  .btn-lg {
+    @apply min-h-[48px] px-7 text-[15px];
+  }
+
+  /* Form fields. The border uses line-strong so it is visible enough to meet
+     the 3:1 rule for controls, which the lighter divider color is not. */
+  .field {
+    @apply block min-h-[44px] md:min-h-[40px] w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-base md:text-sm text-ink placeholder:text-muted;
+  }
+  .field:focus-visible {
+    outline: 2px solid rgb(var(--c-brand));
+    outline-offset: 1px;
+    border-color: rgb(var(--c-brand));
+  }
+  .field[aria-invalid="true"] {
+    @apply border-bad;
+  }
+  .field:disabled {
+    @apply cursor-not-allowed bg-inset opacity-70;
+  }
+  .field-label {
+    @apply mb-1.5 block text-sm font-semibold text-ink;
+  }
+  .field-hint {
+    @apply mt-1.5 text-xs leading-5 text-muted;
+  }
+  .field-error {
+    @apply mt-1.5 text-xs font-semibold leading-5 text-bad-ink;
+  }
+
+  /* Cards and panels */
+  .card {
+    @apply rounded-card border border-line bg-surface;
+  }
+  .card-pad {
+    @apply p-6 md:p-8;
+  }
+  .card-lift {
+    @apply shadow-card;
+  }
+  .card-inset {
+    @apply rounded-2xl bg-inset;
+  }
+  .panel-deep {
+    @apply rounded-card bg-deep text-deep-on;
+  }
+
+  /* Status badges. Always pair one with an icon and a text label, see
+     src/components/ui/StatusPill.jsx. */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold leading-5;
+  }
+  .pill-ok {
+    @apply bg-ok-subtle text-ok-ink;
+  }
+  .pill-warn {
+    @apply bg-warn-subtle text-warn-ink;
+  }
+  .pill-bad {
+    @apply bg-bad-subtle text-bad-ink;
+  }
+  .pill-plain {
+    @apply bg-plain-subtle text-plain-ink;
+  }
+  .pill-brand {
+    @apply bg-brand-subtle text-brand;
+  }
+
+  /* Text helpers */
+  .display {
+    @apply font-display font-semibold tracking-tight;
+  }
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.12em] text-muted;
+  }
+  .hash {
+    @apply break-all font-mono text-xs leading-5 text-muted;
+  }
+  .link {
+    @apply font-semibold text-brand underline underline-offset-2 hover:text-brand-strong;
+  }
+}

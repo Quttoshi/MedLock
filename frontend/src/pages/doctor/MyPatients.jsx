@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getMyPatients } from "../../api/doctor";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { Users, ChevronRight } from "lucide-react";
+import { initials } from "../../adapters/patientStory";
 
 function MyPatients() {
   const { token } = useAuth();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     getMyPatients(token)
@@ -17,76 +18,57 @@ function MyPatients() {
   }, [token]);
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">My Patients</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Patients who have approved your access to their records.
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl">
+      <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+        Your <em>patients</em>
+      </h1>
+      <p className="mt-3 text-sm text-muted">Patients who have approved your access to their records.</p>
 
       {loading ? (
-        <div className="p-10 text-center text-gray-400 text-sm">Loading...</div>
+        <p className="mt-10 text-center text-muted">Loading...</p>
       ) : patients.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
-          <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <p className="text-gray-500 text-sm font-medium">No patients yet</p>
-          <p className="text-gray-400 text-xs mt-1">
-            Submit an access request and wait for patient approval.
+        <div className="card card-pad mt-8 text-center">
+          <Users aria-hidden="true" size={28} className="mx-auto text-muted" />
+          <p className="display mt-3 text-xl text-ink">No patients yet</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">
+            Send an access request and wait for the patient to approve it.
           </p>
-          <button
-            onClick={() => navigate("/doctor/access-requests")}
-            className="mt-4 px-4 py-2 bg-green-700 text-white text-sm rounded-xl hover:bg-green-800 transition"
-          >
-            Submit Access Request
-          </button>
+          <Link to="/doctor/access-requests" className="btn btn-primary mt-5">
+            Send an access request
+          </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {patients.map((patient) => (
-            <div
-              key={patient.id}
-              onClick={() => navigate(`/doctor/patients/${patient.id}/reports`)}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 cursor-pointer hover:shadow-md hover:border-green-200 transition"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-full bg-green-100 flex items-center justify-center">
-                  <span className="text-green-700 font-semibold">
-                    {patient.name?.charAt(0).toUpperCase() || "P"}
+            <li key={patient.id}>
+              <Link
+                to={`/doctor/patients/${patient.id}/reports`}
+                className="card block h-full p-5 transition-colors hover:border-line-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-brand-subtle text-sm font-bold text-brand" aria-hidden="true">
+                    {initials(patient.name)}
                   </span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">{patient.name}</p>
-                  <p className="text-xs text-gray-400">{patient.email}</p>
-                </div>
-              </div>
-              <div className="flex gap-3 text-xs text-gray-500">
-                {patient.blood_group && (
-                  <span className="px-2 py-1 bg-red-50 text-red-600 rounded-lg font-medium">
-                    {patient.blood_group}
+                  <span className="min-w-0">
+                    <span className="block truncate text-base font-bold text-ink">{patient.name}</span>
+                    <span className="block truncate text-sm text-muted">{patient.email}</span>
                   </span>
-                )}
-                {patient.gender && (
-                  <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg capitalize">
-                    {patient.gender}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-green-700 font-medium mt-3">
-                View Records →
-              </p>
-            </div>
+                </span>
+                <span className="mt-4 flex flex-wrap gap-2">
+                  {patient.blood_group && <span className="pill pill-plain">Blood group {patient.blood_group}</span>}
+                  {patient.gender && <span className="pill pill-plain capitalize">{patient.gender}</span>}
+                </span>
+                <span className="mt-4 flex items-center gap-1 text-sm font-bold text-brand">
+                  View records
+                  <ChevronRight aria-hidden="true" size={16} />
+                </span>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
 }
 
 export default MyPatients;
-

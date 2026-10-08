@@ -1,29 +1,38 @@
-import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import AdminSidebar from "../components/AdminSidebar";
-import AdminNavbar from "../components/AdminNavbar";
+import TopNav from "../components/shell/TopNav";
 import { NotificationProvider } from "../context/NotificationContext";
 
-function AdminLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+const ADMIN_LINKS = [
+  { label: "Home", to: "/admin/dashboard" },
+  { label: "Users", to: "/admin/users" },
+  { label: "Doctors", to: "/admin/doctors" },
+  { label: "Centers", to: "/admin/medical-centers" },
+  { label: "Audit", to: "/admin/audit-logs" },
+];
 
+// Admin shell (Template A top bar). Routes and the auth guard in App.jsx are unchanged.
+function AdminLayout() {
   return (
     <NotificationProvider>
-    <div className="app-shell flex h-screen overflow-hidden">
-      <AdminSidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <AdminNavbar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="app-main flex-1 overflow-y-auto">
+      <div className="min-h-screen bg-canvas font-sans text-ink">
+        <a
+          href="#main"
+          className="sr-only rounded-full bg-deep px-4 py-2 text-sm font-semibold text-deep-on focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
+        >
+          Skip to content
+        </a>
+        <TopNav
+          links={ADMIN_LINKS}
+          homePath="/admin/dashboard"
+          notificationsPath="/admin/notifications"
+          badge="admin"
+        />
+        <main id="main" className="app-main mx-auto w-full max-w-[1280px]">
           <Outlet />
         </main>
       </div>
-    </div>
     </NotificationProvider>
   );
 }
 
 export default AdminLayout;
-

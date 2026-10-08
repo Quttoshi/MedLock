@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getAdminAuditLogs } from "../../api/admin";
+import FilterChips from "../../components/ui/FilterChips";
 
-const actionColors = {
-  login: "bg-green-100 text-green-700",
-  logout: "bg-gray-100 text-gray-600",
-  report_upload: "bg-green-100 text-green-700",
-  mc_report_upload: "bg-green-100 text-green-700",
-  access_approved: "bg-green-100 text-green-700",
-  access_denied: "bg-red-100 text-red-700",
-  access_revoked: "bg-orange-100 text-orange-700",
-  medical_center_approved: "bg-teal-100 text-teal-700",
-  medical_center_rejected: "bg-red-100 text-red-700",
-  doctor_verified: "bg-green-100 text-green-700",
-  doctor_unverified: "bg-yellow-100 text-yellow-700",
-  register: "bg-cyan-100 text-cyan-700",
+const actionTone = {
+  login: "pill-ok",
+  logout: "pill-plain",
+  report_upload: "pill-ok",
+  mc_report_upload: "pill-ok",
+  access_approved: "pill-ok",
+  access_denied: "pill-bad",
+  access_revoked: "pill-warn",
+  medical_center_approved: "pill-brand",
+  medical_center_rejected: "pill-bad",
+  doctor_verified: "pill-ok",
+  doctor_unverified: "pill-warn",
+  register: "pill-brand",
 };
 
 function AuditLogs() {
@@ -45,91 +47,85 @@ function AuditLogs() {
     "doctor_verified", "doctor_unverified", "register"
   ];
 
+  const actionOptions = actionTypes.map((a) => ({ value: a, label: a === "" ? "All" : a.replaceAll("_", " ") }));
+
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Audit Logs</h1>
-        <p className="text-gray-500 text-sm mt-1">All system activity — read only.</p>
+    <div className="mx-auto max-w-6xl">
+      <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+        Audit <em>logs</em>
+      </h1>
+      <p className="mt-3 text-sm text-muted">
+        Activity across the platform. Read only, and it never includes record content.
+      </p>
+
+      <div className="mt-8">
+        <FilterChips label="Filter by action" options={actionOptions} value={action} onChange={setAction} />
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {actionTypes.map((a) => (
-          <button
-            key={a}
-            onClick={() => setAction(a)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition
-              ${action === a
-                ? "bg-gray-500 text-white shadow-sm"
-                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-              }`}
-          >
-            {a === "" ? "All" : a.replaceAll("_", " ")}
-          </button>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="p-10 text-center text-gray-400 text-sm">Loading...</div>
-        ) : logs.length === 0 ? (
-          <div className="p-10 text-center text-gray-400 text-sm">No logs found.</div>
-        ) : (
+      {loading ? (
+        <p className="mt-10 text-center text-muted">Loading...</p>
+      ) : logs.length === 0 ? (
+        <div className="card card-pad mt-6 text-center text-sm text-muted">No logs found.</div>
+      ) : (
+        <div className="card mt-6 overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <caption className="sr-only">Audit log entries</caption>
+            <thead className="!bg-inset">
               <tr>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Action</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">User</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Entity</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">IP Address</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Time</th>
+                {["Action", "User", "Entity", "IP address", "Time"].map((h) => (
+                  <th key={h} scope="col" className="px-5 py-3 text-left text-[13px] font-bold !text-muted">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-line">
               {logs.map((log) => (
-                <tr key={log.id} className="hover:bg-gray-50 transition">
+                <tr key={log.id}>
                   <td className="px-5 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${actionColors[log.action] || "bg-gray-100 text-gray-600"}`}>
+                    <span className={`pill capitalize ${actionTone[log.action] || "pill-plain"}`}>
                       {log.action?.replaceAll("_", " ")}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-gray-500">{log.performer_name || log.performed_by || "—"}</td>
-                  <td className="px-5 py-4 text-gray-500">
-                    {log.entity_type ? `${log.entity_type} #${log.entity_id}` : "—"}
+                  <td className="px-5 py-4 text-ink-soft">{log.performer_name || log.performed_by || "-"}</td>
+                  <td className="px-5 py-4 text-ink-soft">
+                    {log.entity_type ? `${log.entity_type} #${log.entity_id}` : "-"}
                   </td>
-                  <td className="px-5 py-4 text-gray-500">{log.ip_address || "—"}</td>
-                  <td className="px-5 py-4 text-gray-500">
-                    {log.created_at ? new Date(log.created_at).toLocaleString() : "—"}
+                  <td className="px-5 py-4 font-mono text-[13px] text-ink-soft">{log.ip_address || "-"}</td>
+                  <td className="whitespace-nowrap px-5 py-4 text-ink-soft">
+                    {log.created_at ? new Date(log.created_at).toLocaleString() : "-"}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100">
-          <button
-            onClick={() => { const o = Math.max(0, offset - LIMIT); setOffset(o); fetchLogs(o); }}
-            disabled={offset === 0}
-            className="px-4 py-2 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition"
-          >
-            ← Previous
-          </button>
-          <span className="text-sm text-gray-400">Showing {offset + 1}–{offset + logs.length}</span>
-          <button
-            onClick={() => { const o = offset + LIMIT; setOffset(o); fetchLogs(o); }}
-            disabled={logs.length < LIMIT}
-            className="px-4 py-2 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition"
-          >
-            Next →
-          </button>
         </div>
+      )}
+
+      {/* Pagination */}
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => { const o = Math.max(0, offset - LIMIT); setOffset(o); fetchLogs(o); }}
+          disabled={offset === 0}
+          className="btn btn-secondary btn-sm"
+        >
+          <ChevronLeft aria-hidden="true" size={16} />
+          Previous
+        </button>
+        <span className="text-sm text-muted" aria-live="polite">
+          Showing {offset + 1} to {offset + logs.length}
+        </span>
+        <button
+          type="button"
+          onClick={() => { const o = offset + LIMIT; setOffset(o); fetchLogs(o); }}
+          disabled={logs.length < LIMIT}
+          className="btn btn-secondary btn-sm"
+        >
+          Next
+          <ChevronRight aria-hidden="true" size={16} />
+        </button>
       </div>
     </div>
   );
 }
 
 export default AuditLogs;
-
-
