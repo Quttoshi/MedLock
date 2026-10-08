@@ -8,8 +8,10 @@ from app.models.ocr_result import OcrResult
 from app.models.blockchain_log import BlockchainLog
 from app.models.access_request import AccessRequest
 from app.models.affiliation_request import AffiliationRequest
+from app.models.doctor_affiliation import DoctorAffiliation
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification
 from app.models.revoked_token import RevokedToken
 from app.models.imaging import ImagingStudy, ImagingSeries
 from app.models.doctor_verification_request import DoctorVerificationRequest
+from app.models.report_thread import ReportThread, ReportThreadMessage

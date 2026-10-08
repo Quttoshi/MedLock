@@ -117,13 +117,14 @@ class TestTokenRevocation:
 def affiliation(monkeypatch):
     doctor = SimpleNamespace(
         id=uuid.uuid4(), user_id=uuid.uuid4(), license_number="PMDC-12345",
-        is_verified=False, medical_center_id=None, user=SimpleNamespace(full_name="Dr. Test"),
+        is_verified=False, affiliations=[], user=SimpleNamespace(full_name="Dr. Test"),
         verification_requests=[],
     )
     req = SimpleNamespace(id=uuid.uuid4(), status="pending", doctor=doctor, decided_at=None, rejection_reason=None)
-    mc = SimpleNamespace(id=uuid.uuid4(), name="City Lab")
+    mc = SimpleNamespace(id=uuid.uuid4(), name="City Hospital", center_type="hospital")
     db = MagicMock()
-    db.query.return_value.filter.return_value.first.return_value = req
+    # The request lookup, then the check for an existing active membership.
+    db.query.return_value.filter.return_value.first.side_effect = lambda: req if req.status == "pending" else None
     notify = MagicMock()
     monkeypatch.setattr(mc_router, "_get_mc", lambda user, db: mc)
     monkeypatch.setattr(mc_router, "log_action", MagicMock())
@@ -141,7 +142,7 @@ class TestAffiliationVerification:
         result = self._approve(affiliation, " pmdc-12345 ")
         assert result["is_verified"] is True
         assert affiliation.doctor.is_verified is True
-        assert affiliation.doctor.medical_center_id == affiliation.mc.id
+        assert [a.medical_center_id for a in affiliation.doctor.affiliations] == [affiliation.mc.id]
         assert affiliation.notify.call_args.args[2] == "affiliation_approved"
 
     def test_wrong_license_is_rejected_and_doctor_stays_unverified(self, affiliation):

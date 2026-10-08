@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { ShieldCheck, Clock, ShieldAlert } from "lucide-react";
 import { getMyVerification, submitVerificationRequest } from "../api/doctor";
+import { parseServerDate } from "../utils/dates";
 
 const formatDate = (value) =>
-  value ? new Date(value).toLocaleDateString("en-PK", { day: "numeric", month: "long", year: "numeric" }) : null;
+  value ? parseServerDate(value).toLocaleDateString("en-PK", { day: "numeric", month: "long", year: "numeric" }) : null;
 
 // Shows the doctor's license verification status. Independent doctors (not verified
-// through a hospital) can ask an admin to verify their PMDC registration from here.
+// through a hospital or clinic) can ask an admin to verify their PMDC registration from here.
 function DoctorVerificationCard({ token }) {
   const [info, setInfo] = useState(null);
   const [registration, setRegistration] = useState("");
@@ -68,7 +69,11 @@ function DoctorVerificationCard({ token }) {
             {info.verified_at && ` · verified ${formatDate(info.verified_at)}`}
             {info.license_expires_at && ` · licence valid until ${formatDate(info.license_expires_at)}`}
           </p>
-          <p className="mt-1.5 text-sm">Patients see this when you request access to their records.</p>
+          <p className="mt-1.5 text-sm">
+            Patients see this when you request access to their records.
+            {info.method === "medical_center" &&
+              " It stays valid while you belong to at least one hospital or clinic."}
+          </p>
         </div>
       ) : pending ? (
         <div className="mt-4 rounded-2xl bg-warn-subtle p-4 text-warn-ink">
@@ -95,9 +100,9 @@ function DoctorVerificationCard({ token }) {
           )}
           {info.note && !latest && <p className="mt-3 text-sm text-muted">{info.note}</p>}
           <p className="mt-4 text-sm leading-6 text-ink-soft">
-            You need to be verified to open patient records. If you work at a hospital, request affiliation
-            below and they will verify you. If you practise independently, ask MedLock to verify your PMDC
-            registration instead.
+            You need to be verified to open patient records. If you work at a hospital or clinic, join it below
+            and it will verify you. If you practise independently, ask MedLock to verify your PMDC registration
+            instead.
           </p>
           <form onSubmit={submit} className="mt-5 grid gap-4 sm:grid-cols-2">
             <div>

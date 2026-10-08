@@ -1,3 +1,5 @@
+import { parseServerDate } from "../utils/dates";
+
 // Adapter for the patient dashboard.
 //
 // It turns what the backend already returns (/reports/my and /access-requests)
@@ -41,11 +43,11 @@ export function groupStoryByMonth(reports, type = "All") {
   const rows = reports
     .filter((r) => type === "All" || r.report_type === type)
     .slice()
-    .sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
+    .sort((a, b) => parseServerDate(b.uploaded_at) - parseServerDate(a.uploaded_at));
 
   const groups = [];
   for (const r of rows) {
-    const d = new Date(r.uploaded_at);
+    const d = parseServerDate(r.uploaded_at);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     let group = groups[groups.length - 1];
     if (!group || group.key !== key) {
@@ -74,7 +76,7 @@ export function activeAccess(requests, now = Date.now()) {
   return requests
     .filter((r) => r.status === "approved")
     .map((r) => {
-      const end = r.expires_at ? new Date(r.expires_at) : null;
+      const end = r.expires_at ? parseServerDate(r.expires_at) : null;
       return {
         id: r.id,
         doctor: doctorLabel(r.doctor_name),
@@ -91,5 +93,5 @@ export function activeAccess(requests, now = Date.now()) {
 export function pendingRequests(requests) {
   return requests
     .filter((r) => r.status === "pending")
-    .sort((a, b) => new Date(b.requested_at) - new Date(a.requested_at));
+    .sort((a, b) => parseServerDate(b.requested_at) - parseServerDate(a.requested_at));
 }

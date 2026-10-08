@@ -3,51 +3,52 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getAdminAuditLogs } from "../../api/admin";
 import FilterChips from "../../components/ui/FilterChips";
+import { parseServerDate } from "../../utils/dates";
 
-const actionTone = {
-  login: "pill-ok",
-  logout: "pill-plain",
-  report_upload: "pill-ok",
-  mc_report_upload: "pill-ok",
-  access_approved: "pill-ok",
-  access_denied: "pill-bad",
-  access_revoked: "pill-warn",
-  medical_center_approved: "pill-brand",
-  medical_center_rejected: "pill-bad",
-  doctor_verified: "pill-ok",
-  doctor_unverified: "pill-warn",
-  register: "pill-brand",
+// Filters are groups of related actions; the backend knows which actions each covers.
+const CATEGORY_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "accounts", label: "Accounts" },
+  { value: "reports", label: "Reports" },
+  { value: "access", label: "Access" },
+  { value: "doctors", label: "Doctors" },
+  { value: "centers", label: "Centers" },
+  { value: "questions", label: "Questions" },
+];
+
+// Colour by outcome: approvals green, refusals red, removals amber, the rest plain.
+const actionTone = (action = "") => {
+  if (/(rejected|denied|failed)$/.test(action)) return "pill-bad";
+  if (/(revoked|unverified|removed|left)$/.test(action)) return "pill-warn";
+  if (/(approved|verified|upload|register)/.test(action)) return "pill-ok";
+  return "pill-plain";
 };
 
 function AuditLogs() {
   const { token } = useAuth();
   const [logs, setLogs] = useState([]);
-  const [action, setAction] = useState("");
+  const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
   const LIMIT = 50;
 
-  const fetchLogs = (newOffset = 0) => {
-    setLoading(true);
-    getAdminAuditLogs(token, action, LIMIT, newOffset)
+  useEffect(() => {
+    getAdminAuditLogs(token, category, LIMIT, offset)
       .then((res) => setLogs(res.data))
       .catch(() => setLogs([]))
       .finally(() => setLoading(false));
-  };
+  }, [token, category, offset]);
 
-  useEffect(() => {
+  // A new filter starts from the first page.
+  const changeCategory = (value) => {
+    setLoading(true);
+    setCategory(value);
     setOffset(0);
-    fetchLogs(0);
-  }, [token, action]);
-
-  const actionTypes = [
-    "", "login", "logout", "report_upload", "mc_report_upload",
-    "access_approved", "access_denied", "access_revoked",
-    "medical_center_approved", "medical_center_rejected",
-    "doctor_verified", "doctor_unverified", "register"
-  ];
-
-  const actionOptions = actionTypes.map((a) => ({ value: a, label: a === "" ? "All" : a.replaceAll("_", " ") }));
+  };
+  const changePage = (value) => {
+    setLoading(true);
+    setOffset(value);
+  };
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -59,7 +60,7 @@ function AuditLogs() {
       </p>
 
       <div className="mt-8">
-        <FilterChips label="Filter by action" options={actionOptions} value={action} onChange={setAction} />
+        <FilterChips label="Filter by activity" options={CATEGORY_OPTIONS} value={category} onChange={changeCategory} />
       </div>
 
       {loading ? (
@@ -81,7 +82,7 @@ function AuditLogs() {
               {logs.map((log) => (
                 <tr key={log.id}>
                   <td className="px-5 py-4">
-                    <span className={`pill capitalize ${actionTone[log.action] || "pill-plain"}`}>
+                    <span className={`pill capitalize ${actionTone(log.action)}`}>
                       {log.action?.replaceAll("_", " ")}
                     </span>
                   </td>
@@ -91,7 +92,7 @@ function AuditLogs() {
                   </td>
                   <td className="px-5 py-4 font-mono text-[13px] text-ink-soft">{log.ip_address || "-"}</td>
                   <td className="whitespace-nowrap px-5 py-4 text-ink-soft">
-                    {log.created_at ? new Date(log.created_at).toLocaleString() : "-"}
+                    {log.created_at ? parseServerDate(log.created_at).toLocaleString() : "-"}
                   </td>
                 </tr>
               ))}
@@ -104,7 +105,7 @@ function AuditLogs() {
       <div className="mt-4 flex items-center justify-between gap-3">
         <button
           type="button"
-          onClick={() => { const o = Math.max(0, offset - LIMIT); setOffset(o); fetchLogs(o); }}
+          onClick={() => changePage(Math.max(0, offset - LIMIT))}
           disabled={offset === 0}
           className="btn btn-secondary btn-sm"
         >
@@ -116,7 +117,7 @@ function AuditLogs() {
         </span>
         <button
           type="button"
-          onClick={() => { const o = offset + LIMIT; setOffset(o); fetchLogs(o); }}
+          onClick={() => changePage(offset + LIMIT)}
           disabled={logs.length < LIMIT}
           className="btn btn-secondary btn-sm"
         >

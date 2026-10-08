@@ -4,6 +4,7 @@ import { FileText } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getMCReports } from "../../api/medicalCenter";
 import StatusPill from "../../components/ui/StatusPill";
+import { parseServerDate } from "../../utils/dates";
 
 const FILTERS = ["all", "approved", "pending"];
 
@@ -82,7 +83,7 @@ function MCMyReports() {
                   <td className="px-5 py-4 capitalize text-ink-soft">{report.report_type?.replace(/_/g, " ") || "-"}</td>
                   <td className="px-5 py-4 text-ink-soft">{report.patient_name || report.patient_email || "-"}</td>
                   <td className="px-5 py-4 text-ink-soft">
-                    {report.uploaded_at ? new Date(report.uploaded_at).toLocaleDateString() : "-"}
+                    {report.uploaded_at ? parseServerDate(report.uploaded_at).toLocaleDateString() : "-"}
                   </td>
                   <td className="px-5 py-4">
                     <StatusPill tone={report.is_approved ? "ok" : "warn"}>

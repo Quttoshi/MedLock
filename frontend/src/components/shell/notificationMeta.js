@@ -1,4 +1,5 @@
-import { Bell, Clock, ShieldCheck, ShieldAlert, Upload, Lock } from "lucide-react";
+import { Bell, Clock, ShieldCheck, ShieldAlert, Upload, Lock, MessageCircleQuestion, MessageSquareReply } from "lucide-react";
+import { parseServerDate } from "../../utils/dates";
 
 // One place for how each notification type looks, shared by the bell and the
 // Notifications page. Unknown types fall back to a plain bell.
@@ -10,6 +11,8 @@ const TYPE_ICON = {
   upload_confirmed: { Icon: Upload, tone: "bg-brand-subtle text-brand" },
   report_uploaded: { Icon: Upload, tone: "bg-brand-subtle text-brand" },
   mc_upload: { Icon: Upload, tone: "bg-brand-subtle text-brand" },
+  report_question: { Icon: MessageCircleQuestion, tone: "bg-brand-subtle text-brand" },
+  report_reply: { Icon: MessageSquareReply, tone: "bg-brand-subtle text-brand" },
 };
 
 export function notificationIcon(type) {
@@ -17,10 +20,10 @@ export function notificationIcon(type) {
 }
 
 export function timeAgo(dateStr) {
-  const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
+  const diff = Math.floor((new Date() - parseServerDate(dateStr)) / 1000);
   if (diff < 60) return "Just now";
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
+  return parseServerDate(dateStr).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
 }

@@ -66,6 +66,13 @@ export const requestAffiliation = (token, data) =>
 export const getMyAffiliations = (token) =>
   api.get("/doctor/affiliations", { headers: getHeaders(token) });
 
+// Hospitals and clinics the doctor currently belongs to
+export const getMyMemberships = (token) =>
+  api.get("/doctor/memberships", { headers: getHeaders(token) });
+
+export const leaveAffiliation = (token, medicalCenterId) =>
+  api.post(`/doctor/affiliations/${medicalCenterId}/leave`, {}, { headers: getHeaders(token) });
+
 // Query patient history
 export const queryPatientHistory = (token, patientId, question) =>
   api.post(

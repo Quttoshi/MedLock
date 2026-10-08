@@ -12,7 +12,6 @@ class Doctor(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    medical_center_id = Column(UUID(as_uuid=True), ForeignKey("medical_centers.id", ondelete="SET NULL"), nullable=True)
     specialization = Column(String, nullable=False)
     license_number = Column(String, unique=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
@@ -29,7 +28,10 @@ class Doctor(Base):
     # Relationships
     user = relationship("User", back_populates="doctor", foreign_keys=[user_id])
     verified_by = relationship("User", foreign_keys=[verified_by_user_id])
-    medical_center = relationship("MedicalCenter", back_populates="doctors")
+    affiliations = relationship(
+        "DoctorAffiliation", back_populates="doctor",
+        order_by="DoctorAffiliation.joined_at", cascade="all, delete-orphan", passive_deletes=True,
+    )
     access_requests = relationship("AccessRequest", back_populates="doctor")
     affiliation_requests = relationship("AffiliationRequest", back_populates="doctor")
     verification_requests = relationship(

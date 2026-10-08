@@ -14,12 +14,12 @@ PAST = date.today() - timedelta(days=1)
 
 
 def _doctor(verified=False, license_number="PMDC-12345-N", medical_center=None):
+    affiliations = [SimpleNamespace(status="active", medical_center=medical_center)] if medical_center else []
     return SimpleNamespace(
         id=uuid.uuid4(), user_id=uuid.uuid4(), license_number=license_number, specialization="Cardiology",
-        is_verified=verified, verification_method=None, verified_by_user_id=None, verified_at=None,
-        license_expires_at=None, verification_note=None, medical_center=medical_center,
-        medical_center_id=getattr(medical_center, "id", None), user=SimpleNamespace(full_name="Dr. Test"),
-        verification_requests=[],
+        is_verified=verified, verification_method=None, verified_by_user_id=None, verified_by=None, verified_at=None,
+        license_expires_at=None, verification_note=None, affiliations=affiliations,
+        user=SimpleNamespace(full_name="Dr. Test"), verification_requests=[],
     )
 
 
@@ -42,6 +42,13 @@ class TestLabels:
         assert dv.verification_label(_doctor()) == "Not verified"
 
     def test_verified_by_medical_center_names_it(self):
+        center = SimpleNamespace(id=uuid.uuid4(), name="Shifa International")
+        doctor = _doctor(verified=True, medical_center=SimpleNamespace(id=uuid.uuid4(), name="Evening Clinic"))
+        doctor.verification_method = "medical_center"
+        doctor.verified_by = SimpleNamespace(medical_center=center)
+        assert dv.verification_label(doctor) == "Verified by Shifa International"
+
+    def test_unrecorded_verifier_falls_back_to_a_current_center(self):
         doctor = _doctor(verified=True, medical_center=SimpleNamespace(id=uuid.uuid4(), name="Shifa International"))
         doctor.verification_method = "medical_center"
         assert dv.verification_label(doctor) == "Verified by Shifa International"

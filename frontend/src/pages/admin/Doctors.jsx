@@ -12,11 +12,12 @@ import {
 } from "../../api/admin";
 import FilterChips from "../../components/ui/FilterChips";
 import StatusPill from "../../components/ui/StatusPill";
+import { parseServerDate } from "../../utils/dates";
 
 const DOCTOR_FILTERS = ["all", "verified", "unverified"].map((f) => ({ value: f, label: f }));
 
 const formatDate = (value) =>
-  value ? new Date(value).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" }) : "-";
+  value ? parseServerDate(value).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" }) : "-";
 
 const errorText = (err, fallback) => {
   const detail = err.response?.data?.detail;
@@ -261,8 +262,8 @@ function Doctors() {
         Verify <em>doctors</em>
       </h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-        Affiliated doctors are verified by their medical center. Independent doctors request verification, which
-        you check against the PMDC register.
+        Affiliated doctors are verified by a hospital or clinic they work at. Independent doctors request
+        verification, which you check against the PMDC register.
       </p>
 
       {/* Pending verification requests */}
@@ -305,8 +306,8 @@ function Doctors() {
                   <td className="px-5 py-4">
                     <p className="font-bold text-ink">{doc.name}</p>
                     <p className="text-sm text-muted">{doc.email}</p>
-                    {doc.medical_center_name && (
-                      <p className="mt-0.5 text-sm text-muted">{doc.medical_center_name}</p>
+                    {doc.medical_center_names?.length > 0 && (
+                      <p className="mt-0.5 text-sm text-muted">{doc.medical_center_names.join(", ")}</p>
                     )}
                   </td>
                   <td className="px-5 py-4 capitalize text-ink-soft">{doc.specialization || "-"}</td>

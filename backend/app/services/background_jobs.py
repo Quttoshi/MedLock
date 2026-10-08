@@ -11,6 +11,7 @@ from app.config import settings
 from app.database import SessionLocal
 from app.models.revoked_token import RevokedToken
 from app.services.blockchain_service import confirm_pending_logs, retry_pending_logs
+from app.services.center_verification_service import expire_lapsed_center_licences
 from app.services.doctor_verification_service import expire_lapsed_licenses
 from app.services.imaging_service import backfill_slice_stacks, process_pending_studies
 
@@ -32,6 +33,7 @@ JOBS = (
     ("confirm pending blockchain logs", confirm_pending_logs),
     ("purge expired revoked tokens", purge_expired_revoked_tokens),
     ("remove verification from doctors with expired licenses", expire_lapsed_licenses),
+    ("withdraw approval from centers with expired licences", expire_lapsed_center_licences),
 )
 
 

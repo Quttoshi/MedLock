@@ -26,10 +26,12 @@ EMAIL_TITLES = {
     "medical_center_approved": "Your medical center has been approved",
     "medical_center_rejected": "Update on your medical center registration",
     "medical_center_registered": "A new medical center is awaiting approval",
+    "medical_center_licence_expired": "Your center's licence has expired",
     "report_consent_approved": "A patient approved your uploaded report",
     "report_consent_rejected": "A patient declined your uploaded report",
     "affiliation_approved": "Your affiliation request was approved",
     "affiliation_rejected": "Update on your affiliation request",
+    "affiliation_ended": "A medical center affiliation has ended",
     "blockchain_failed": "Action needed: blockchain logging failed",
     "imaging_processed": "An imaging study is ready to view",
     "imaging_processing_failed": "An imaging study could not be processed",
@@ -37,6 +39,8 @@ EMAIL_TITLES = {
     "doctor_verification_approved": "Your license has been verified",
     "doctor_verification_rejected": "Update on your license verification",
     "doctor_verification_revoked": "Your verification has been removed",
+    "report_question": "New question about a report",
+    "report_reply": "New reply about a report",
 }
 
 # Page a notification opens, by recipient role and notification type, used when the
@@ -55,6 +59,7 @@ DEFAULT_LINKS = {
         "access_revoked": "/doctor/access-requests",
         "affiliation_approved": "/doctor/affiliation",
         "affiliation_rejected": "/doctor/affiliation",
+        "affiliation_ended": "/doctor/affiliation",
         "doctor_verification_approved": "/doctor/affiliation",
         "doctor_verification_rejected": "/doctor/affiliation",
         "doctor_verification_revoked": "/doctor/affiliation",
@@ -62,8 +67,10 @@ DEFAULT_LINKS = {
     "medical_center": {
         "medical_center_approved": "/mc/dashboard",
         "medical_center_rejected": "/mc/dashboard",
+        "medical_center_licence_expired": "/mc/dashboard",
         "report_consent_approved": "/mc/reports",
         "report_consent_rejected": "/mc/reports",
+        "affiliation_ended": "/mc/doctors",
         "imaging_processed": "/mc/reports",
         "imaging_processing_failed": "/mc/reports",
     },
@@ -92,8 +99,10 @@ def create_notification(
     notification_type: str,
     message: str,
     link: str | None = None,
+    send_email: bool = True,
 ) -> None:
-    """Store an in-app notification (opening `link`, or the default page for its type) and email it."""
+    """Store an in-app notification (opening `link`, or the default page for its type) and,
+    unless `send_email` is False, email it."""
     recipient = db.query(User).filter(User.id == recipient_id).first()
     if link is None and recipient is not None:
         link = default_link(recipient.role, notification_type)
@@ -106,7 +115,7 @@ def create_notification(
     db.add(notification)
     db.commit()
 
-    if recipient and recipient.email and _can_email(recipient):
+    if send_email and recipient and recipient.email and _can_email(recipient):
         subject, text, html = _notification_email(recipient, notification_type, message, link)
         send_email_async(recipient.email, subject, text, html)
 

@@ -17,9 +17,11 @@ from datetime import datetime, timezone
 
 from app.services.encryption_service import decrypt_file
 from app.services.storage_service import get_supabase, BUCKET_NAME
-from app.services.access_request_service import check_doctor_has_access
+from app.services.access_request_service import check_doctor_has_access, display_status
 from app.services.audit_service import log_action
 from app.services.blockchain_service import verify_report_integrity
+from app.services import affiliation_service as affiliations
+from app.services import center_verification_service as center_checks
 from app.services import doctor_verification_service as verification
 
 router = APIRouter(prefix="/doctor", tags=["Doctor"])
@@ -45,7 +47,7 @@ def get_profile(
         "specialization": doctor.specialization,
         "license_number": doctor.license_number,
         "is_verified": doctor.is_verified,
-        "medical_center": doctor.medical_center.name if doctor.medical_center else None,
+        "medical_centers": [affiliations.center_summary(c) for c in affiliations.active_centers(doctor)],
     }
 
 
@@ -54,7 +56,8 @@ def get_accessible_patients(
     current_user: User = Depends(require_role(["doctor"])),
     db: Session = Depends(get_db),
 ):
-    """Returns distinct patients whose reports this doctor has approved access to."""
+    """Returns distinct patients whose reports this doctor currently has access to
+    (approved and not expired)."""
     doctor = _get_doctor(current_user, db)
 
     approved = (
@@ -63,13 +66,14 @@ def get_accessible_patients(
             AccessRequest.doctor_id == doctor.id,
             AccessRequest.status == "approved",
         )
+        .order_by(AccessRequest.decided_at.desc())
         .all()
     )
 
     seen_patients = {}
     for req in approved:
         patient = req.patient
-        if not patient or str(patient.id) in seen_patients:
+        if not patient or str(patient.id) in seen_patients or display_status(req) == "expired":
             continue
         seen_patients[str(patient.id)] = {
             "id": str(patient.id),
@@ -96,7 +100,9 @@ def get_patient_reports(
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
 
-    reports = db.query(MedicalReport).filter(MedicalReport.patient_id == patient.id).all()
+    reports = db.query(MedicalReport).filter(MedicalReport.patient_id == patient.id).order_by(
+        MedicalReport.uploaded_at.desc()
+    ).all()
 
     accessible = []
     for report in reports:
@@ -119,16 +125,19 @@ def list_medical_centers(
     current_user: User = Depends(require_role(["doctor"])),
     db: Session = Depends(get_db),
 ):
-    """List approved medical centers, optionally filtered by name search."""
-    q = db.query(MedicalCenter).filter(MedicalCenter.is_approved == True)
+    """List approved hospitals and clinics a doctor can join (labs take no doctors),
+    optionally filtered by name search."""
+    q = db.query(MedicalCenter).filter(MedicalCenter.is_approved == True, MedicalCenter.center_type != "lab")
     if search:
         q = q.filter(MedicalCenter.name.ilike(f"%{search}%"))
-    centers = q.all()
+    centers = q.order_by(MedicalCenter.name).all()
     return [
         {
             "id": str(c.id),
             "name": c.name,
             "address": c.address,
+            "center_type": c.center_type,
+            "licence_label": center_checks.licence_label(c),
         }
         for c in centers
     ]
@@ -140,14 +149,9 @@ def request_affiliation(
     current_user: User = Depends(require_role(["doctor"])),
     db: Session = Depends(get_db),
 ):
-    """Doctor requests affiliation with a medical center."""
+    """Doctor requests affiliation with a hospital or clinic. A doctor can belong to
+    several centers at once."""
     doctor = _get_doctor(current_user, db)
-
-    if doctor.medical_center_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You are already affiliated with a medical center. Revoke it first.",
-        )
 
     mc_id = body.get("medical_center_id")
     reason = body.get("reason", "").strip() or None
@@ -159,13 +163,7 @@ def request_affiliation(
     if not mc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical center not found or not approved")
 
-    existing = db.query(AffiliationRequest).filter(
-        AffiliationRequest.doctor_id == doctor.id,
-        AffiliationRequest.medical_center_id == mc.id,
-        AffiliationRequest.status == "pending",
-    ).first()
-    if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A pending affiliation request already exists for this medical center")
+    affiliations.check_can_request(doctor, mc, db)
 
     req = AffiliationRequest(
         doctor_id=doctor.id,
@@ -192,7 +190,9 @@ def my_affiliation_requests(
 ):
     """View all affiliation requests submitted by this doctor."""
     doctor = _get_doctor(current_user, db)
-    requests = db.query(AffiliationRequest).filter(AffiliationRequest.doctor_id == doctor.id).all()
+    requests = db.query(AffiliationRequest).filter(AffiliationRequest.doctor_id == doctor.id).order_by(
+        AffiliationRequest.requested_at.desc()
+    ).all()
     return [
         {
             "id": str(r.id),
@@ -205,6 +205,30 @@ def my_affiliation_requests(
         }
         for r in requests
     ]
+
+
+@router.get("/memberships")
+def my_memberships(
+    current_user: User = Depends(require_role(["doctor"])),
+    db: Session = Depends(get_db),
+):
+    """The hospitals and clinics this doctor currently belongs to."""
+    doctor = _get_doctor(current_user, db)
+    return [affiliations.membership_summary(a) for a in affiliations.active_affiliations(doctor)]
+
+
+@router.post("/affiliations/{medical_center_id}/leave")
+def leave_affiliation(
+    medical_center_id: str,
+    request: Request = None,
+    current_user: User = Depends(require_role(["doctor"])),
+    db: Session = Depends(get_db),
+):
+    """Leave a medical center. Leaving the last one ends a center-based verification."""
+    doctor = _get_doctor(current_user, db)
+    affiliation = affiliations.get_active_affiliation_or_404(doctor.id, uuid.UUID(medical_center_id), db)
+    affiliations.end_affiliation(affiliation, current_user, None, db, request)
+    return {"medical_center_id": medical_center_id, "status": "ended", "is_verified": doctor.is_verified}
 
 
 @router.get("/patients/{patient_id}/reports/{report_id}/download")

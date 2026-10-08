@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import StatusPill from "../../components/ui/StatusPill";
 import { doctorLabel, initials } from "../../adapters/patientStory";
+import { parseServerDate } from "../../utils/dates";
 
 // How the doctor was verified, so the patient can judge the request
 function VerificationNote({ request }) {
@@ -21,8 +22,8 @@ function VerificationNote({ request }) {
   );
 }
 
-const STATUS_TONE = { pending: "warn", approved: "ok", denied: "bad", revoked: "plain" };
-const STATUS_ICON = { pending: Clock, approved: Check, denied: X, revoked: X };
+const STATUS_TONE = { pending: "warn", approved: "ok", denied: "bad", revoked: "plain", expired: "plain" };
+const STATUS_ICON = { pending: Clock, approved: Check, denied: X, revoked: X, expired: Clock };
 
 function StatusBadge({ status }) {
   return (
@@ -44,7 +45,7 @@ function DoctorAvatar({ name }) {
 }
 
 function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString("en-PK", {
+  return parseServerDate(dateStr).toLocaleDateString("en-PK", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -138,6 +139,9 @@ function HistoryCard({ request, onRevoke, actionLoading }) {
             {request.decided_at && <span>Decided: {formatDate(request.decided_at)}</span>}
             {request.expires_at && request.status === "approved" && (
               <span className="font-semibold text-warn-ink">Expires: {formatDate(request.expires_at)}</span>
+            )}
+            {request.expires_at && request.status === "expired" && (
+              <span>Expired: {formatDate(request.expires_at)}</span>
             )}
           </div>
 
@@ -239,29 +243,17 @@ function AccessRequests() {
     }
   };
 
-  // ── Filter by tab ────────────────────────────────────
-  const filtered = requests.filter((r) => {
-    if (activeTab === "pending") return r.status === "pending";
-    if (activeTab === "approved") return r.status === "approved";
-    if (activeTab === "denied") return r.status === "denied";
-    if (activeTab === "revoked") return r.status === "revoked";
-    return true;
-  });
-
-  // ── Tab counts ───────────────────────────────────────
-  const counts = {
-    pending: requests.filter((r) => r.status === "pending").length,
-    approved: requests.filter((r) => r.status === "approved").length,
-    denied: requests.filter((r) => r.status === "denied").length,
-    revoked: requests.filter((r) => r.status === "revoked").length,
-  };
-
+  // ── Tabs: one per status ─────────────────────────────
+  // "Approved" is current access only; access past its 30 days shows under "Expired".
   const tabs = [
     { key: "pending", label: "Pending" },
     { key: "approved", label: "Approved" },
+    { key: "expired", label: "Expired" },
     { key: "denied", label: "Denied" },
     { key: "revoked", label: "Revoked" },
   ];
+  const filtered = requests.filter((r) => r.status === activeTab);
+  const counts = Object.fromEntries(tabs.map((t) => [t.key, requests.filter((r) => r.status === t.key).length]));
 
   if (loading) {
     return <p className="py-24 text-center text-muted">Loading your requests...</p>;

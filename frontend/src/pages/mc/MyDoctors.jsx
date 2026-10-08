@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { Users } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
+import { Users, UserMinus } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { getMCDoctors, getAffiliationRequests, approveAffiliation, rejectAffiliation } from "../../api/medicalCenter";
+import { getMCDoctors, getAffiliationRequests, approveAffiliation, rejectAffiliation, removeDoctor } from "../../api/medicalCenter";
 import StatusPill from "../../components/ui/StatusPill";
 import { initials } from "../../adapters/patientStory";
+import { parseServerDate } from "../../utils/dates";
 
 function MCMyDoctors() {
   const { token } = useAuth();
+  const { isLab } = useOutletContext() ?? {};
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -15,6 +18,9 @@ function MCMyDoctors() {
   const [rejectReason, setRejectReason] = useState({});
   const [licenseInput, setLicenseInput] = useState({});
   const [actionError, setActionError] = useState({});
+  // Doctor whose removal is being confirmed, and the optional reason shared with them
+  const [removing, setRemoving] = useState(null);
+  const [removeReason, setRemoveReason] = useState("");
 
   const fetchAffiliations = () =>
     getAffiliationRequests(token, "pending")
@@ -56,6 +62,23 @@ function MCMyDoctors() {
     setActionLoading(null);
   };
 
+  const handleRemove = async (doctor) => {
+    setActionLoading(doctor.id);
+    setActionError({ ...actionError, [doctor.id]: null });
+    try {
+      await removeDoctor(token, doctor.id, removeReason.trim());
+      setRemoving(null);
+      setRemoveReason("");
+      await fetchDoctors();
+    } catch (err) {
+      setActionError({
+        ...actionError,
+        [doctor.id]: err.response?.data?.detail || "Could not remove this doctor.",
+      });
+    }
+    setActionLoading(null);
+  };
+
   useEffect(() => {
     fetchDoctors().finally(() => setLoading(false));
     fetchAffiliations();
@@ -66,6 +89,22 @@ function MCMyDoctors() {
     : filter === "verified"
     ? doctors.filter((d) => d.is_verified)
     : doctors.filter((d) => !d.is_verified);
+
+  if (isLab) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+          Your <em>doctors</em>
+        </h1>
+        <div className="card card-pad mt-8 text-center">
+          <Users aria-hidden="true" size={28} className="mx-auto text-muted" />
+          <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-muted">
+            Diagnostic labs upload reports for patients but do not take affiliated doctors.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -202,11 +241,63 @@ function MCMyDoctors() {
                 </dl>
               )}
 
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
                 <StatusPill tone={doctor.is_verified ? "ok" : "warn"}>
                   {doctor.is_verified ? "Verified" : "Pending verification"}
                 </StatusPill>
+                {removing !== doctor.id && (
+                  <button
+                    type="button"
+                    onClick={() => { setRemoving(doctor.id); setRemoveReason(""); }}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    <UserMinus aria-hidden="true" size={16} />
+                    Remove
+                  </button>
+                )}
               </div>
+              {doctor.joined_at && (
+                <p className="mt-2 text-sm text-muted">
+                  Joined{" "}
+                  {parseServerDate(doctor.joined_at).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
+              )}
+
+              {removing === doctor.id && (
+                <div className="card-inset mt-4 space-y-2.5 p-3.5">
+                  <p className="text-sm font-bold text-ink">Remove {doctor.name} from your center?</p>
+                  <p className="text-sm leading-5 text-muted">
+                    They are notified. If your center verified them and they belong to no other center, their
+                    verification ends.
+                  </p>
+                  <div>
+                    <label htmlFor={`remove-${doctor.id}`} className="field-label">Reason (optional, shared with the doctor)</label>
+                    <input
+                      id={`remove-${doctor.id}`}
+                      type="text"
+                      value={removeReason}
+                      onChange={(e) => setRemoveReason(e.target.value)}
+                      className="field"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(doctor)}
+                      disabled={actionLoading === doctor.id}
+                      className="btn btn-danger btn-sm flex-1"
+                    >
+                      {actionLoading === doctor.id ? "Removing..." : "Remove doctor"}
+                    </button>
+                    <button type="button" onClick={() => setRemoving(null)} className="btn btn-ghost btn-sm flex-1">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              {actionError[doctor.id] && (
+                <p role="alert" className="mt-2 text-sm font-semibold text-bad-ink">{actionError[doctor.id]}</p>
+              )}
             </li>
           ))}
         </ul>

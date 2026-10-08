@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Plus } from "lucide-react";
 import { getMyAccessRequests, submitAccessRequest } from "../../api/doctor";
 import StatusPill from "../../components/ui/StatusPill";
+import { parseServerDate } from "../../utils/dates";
 
 function DoctorAccessRequests() {
   const { token } = useAuth();
@@ -52,8 +53,8 @@ function DoctorAccessRequests() {
     setSubmitting(false);
   };
 
-  const TONE = { pending: "warn", approved: "ok", denied: "bad", revoked: "plain" };
-  const fmt = (v) => (v ? new Date(v).toLocaleDateString() : "-");
+  const TONE = { pending: "warn", approved: "ok", denied: "bad", revoked: "plain", expired: "plain" };
+  const fmt = (v) => (v ? parseServerDate(v).toLocaleDateString() : "-");
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -81,7 +82,7 @@ function DoctorAccessRequests() {
       )}
 
       <div role="group" aria-label="Filter requests by status" className="mt-6 inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1">
-        {["all", "pending", "approved", "denied", "revoked"].map((f) => (
+        {["all", "pending", "approved", "expired", "denied", "revoked"].map((f) => (
           <button
             key={f}
             type="button"

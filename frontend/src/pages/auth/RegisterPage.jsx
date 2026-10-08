@@ -4,6 +4,8 @@ import api from "../../api/axios";
 import PasswordInput from "../../components/PasswordInput";
 import AuthShell from "../../components/shell/AuthShell";
 import { AlertCircle, ArrowLeft } from "lucide-react";
+import { CENTER_TYPES } from "../../constants/centerTypes";
+import { REGULATORS } from "../../constants/regulators";
 
 const ROLE_ENDPOINTS = {
   patient: "/auth/register",
@@ -39,7 +41,7 @@ function Field({ label, name, type = "text", placeholder, value, onChange, error
 const ROLE_LABELS = {
   patient: "Patient",
   doctor: "Doctor",
-  medical_center: "Hospital / Clinic",
+  medical_center: "Hospital, clinic or lab",
 };
 
 function RegisterPage() {
@@ -54,6 +56,9 @@ function RegisterPage() {
     specialization: "",
     license_number: "",
     address: "",
+    center_type: "hospital",
+    regulator: "",
+    license_expires_at: "",
     date_of_birth: "",
     blood_group: "",
     gender: "",
@@ -91,6 +96,8 @@ function RegisterPage() {
     if (role === "medical_center") {
       if (!formData.license_number.trim()) e.license_number = "License number is required.";
       if (!formData.address.trim()) e.address = "Address is required.";
+      if (!formData.regulator) e.regulator = "Choose the regulator that licensed your center.";
+      if (!formData.license_expires_at) e.license_expires_at = "Enter the date your licence is valid until.";
     }
 
     return e;
@@ -127,6 +134,9 @@ function RegisterPage() {
       payload.center_name = formData.name;
       payload.license_number = formData.license_number;
       payload.address = formData.address;
+      payload.center_type = formData.center_type;
+      payload.regulator = formData.regulator;
+      payload.license_expires_at = formData.license_expires_at;
     }
 
     setLoading(true);
@@ -168,7 +178,7 @@ function RegisterPage() {
 
       <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-5">
         <Field
-          label={role === "medical_center" ? "Center or hospital name" : "Full name"}
+          label={role === "medical_center" ? "Center name" : "Full name"}
           name="name"
           placeholder={role === "medical_center" ? "City General Hospital" : "Muhammad Ali"}
           value={formData.name}
@@ -254,7 +264,55 @@ function RegisterPage() {
         {/* Medical Center extra fields */}
         {role === "medical_center" && (
           <>
-            <Field label="License number" name="license_number" placeholder="MC-98765" value={formData.license_number} onChange={handleChange} error={errors.license_number} />
+            <div>
+              <label htmlFor="f-center_type" className="field-label">Type</label>
+              <select id="f-center_type" name="center_type" value={formData.center_type} onChange={handleChange} className="field" aria-describedby="f-center_type-hint">
+                {CENTER_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <p id="f-center_type-hint" className="field-hint">
+                Hospitals and clinics can verify the doctors who work there. Labs upload reports only.
+              </p>
+            </div>
+            <div>
+              <label htmlFor="f-regulator" className="field-label">Regulator</label>
+              <select
+                id="f-regulator"
+                name="regulator"
+                value={formData.regulator}
+                onChange={handleChange}
+                aria-invalid={Boolean(errors.regulator)}
+                aria-describedby="f-regulator-hint"
+                className="field"
+              >
+                <option value="">Select the regulator that licensed your center</option>
+                {REGULATORS.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+              <p id="f-regulator-hint" className="field-hint">
+                MedLock checks your licence on this regulator's register before approving your center.
+              </p>
+              {errors.regulator && <p id="f-regulator-error" className="field-error">{errors.regulator}</p>}
+            </div>
+            <Field label="Licence number" name="license_number" placeholder="As shown on your regulator licence" value={formData.license_number} onChange={handleChange} error={errors.license_number} />
+            <div>
+              <label htmlFor="f-license_expires_at" className="field-label">Licence valid until</label>
+              <input
+                id="f-license_expires_at"
+                type="date"
+                name="license_expires_at"
+                value={formData.license_expires_at}
+                onChange={handleChange}
+                min={new Date().toISOString().split("T")[0]}
+                aria-invalid={Boolean(errors.license_expires_at)}
+                className="field"
+              />
+              {errors.license_expires_at && (
+                <p id="f-license_expires_at-error" className="field-error">{errors.license_expires_at}</p>
+              )}
+            </div>
             <Field label="Address" name="address" placeholder="123 Main St, Karachi" value={formData.address} onChange={handleChange} error={errors.address} />
           </>
         )}

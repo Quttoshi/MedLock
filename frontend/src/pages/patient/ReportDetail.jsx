@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Download, ShieldCheck, ScanText, ExternalLink } from "lucide-react";
+import { ArrowLeft, Download, ShieldCheck, ExternalLink } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import IntegrityCheck from "../../components/IntegrityCheck";
 import ImagingStudyView from "../../components/ImagingStudyView";
+import ReportThreads from "../../components/ReportThreads";
 import { imagingDownloadName } from "../../utils/imaging";
 import StatusPill from "../../components/ui/StatusPill";
 import { sourceLabel } from "../../adapters/patientStory";
+import { parseServerDate } from "../../utils/dates";
 
 function BlockchainBadge({ logs }) {
   if (!logs || logs.length === 0) return null;
@@ -25,10 +27,8 @@ function ReportDetail() {
   const { token } = useAuth();
 
   const [report, setReport] = useState(null);
-  const [ocrData, setOcrData] = useState(null);
   const [blockchainLogs, setBlockchainLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const abnormalRows = ocrData?.abnormal_values || [];
 
   // Stable references: ImagingStudyView reloads whenever these change.
   const fetchImagingStudy = useCallback(
@@ -53,19 +53,13 @@ function ReportDetail() {
     [id, token]
   );
 
-  // ── Fetch Report + OCR + Blockchain ──────────────────
+  // ── Fetch Report + Blockchain ────────────────────────
   useEffect(() => {
     const headers = { Authorization: `Bearer ${token}` };
     const fetchAll = async () => {
       try {
         const res = await api.get(`/reports/${id}`, { headers });
         setReport(res.data);
-        try {
-          const ocrRes = await api.get(`/reports/${id}/ocr`, { headers });
-          setOcrData(ocrRes.data);
-        } catch {
-          setOcrData(null);
-        }
         try {
           const chainRes = await api.get(`/reports/${id}/blockchain`, { headers });
           let logs = chainRes.data;
@@ -116,7 +110,7 @@ function ReportDetail() {
   };
 
   const formatDate = (dateStr) =>
-    new Date(dateStr).toLocaleDateString("en-PK", {
+    parseServerDate(dateStr).toLocaleDateString("en-PK", {
       day: "numeric", month: "long", year: "numeric",
       hour: "2-digit", minute: "2-digit",
     });
@@ -181,6 +175,10 @@ function ReportDetail() {
         </section>
       )}
 
+      {/* Questions: private threads with the doctors who have access. Medical-center
+          uploads can be discussed once the patient approves them. */}
+      {report.is_approved !== false && <ReportThreads token={token} reportId={id} role="patient" />}
+
       {/* Integrity */}
       <section className="card card-pad">
         <h2 className="display flex items-center gap-2.5 text-xl text-ink">
@@ -218,87 +216,6 @@ function ReportDetail() {
           }
         />
       </section>
-
-      {/* Extracted Report Data */}
-      {ocrData && (
-        <section className="card card-pad">
-          <h2 className="display flex items-center gap-2.5 text-xl text-ink">
-            <ScanText aria-hidden="true" size={24} className="text-brand" />
-            Extracted text
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            Read automatically from printed or typed text. Check it against the original file, and ask your doctor what it means.
-          </p>
-
-          {abnormalRows.length > 0 && (
-            <div className="mt-4 overflow-x-auto rounded-2xl border border-line">
-              <table className="w-full text-sm">
-                <caption className="sr-only">Values flagged by the report</caption>
-                <thead className="!bg-inset">
-                  <tr>
-                    {["Parameter", "Value", "Report reference", "Source evidence"].map((h) => (
-                      <th key={h} scope="col" className="px-4 py-3 text-left text-[13px] font-bold !text-muted">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {abnormalRows.map((row, i) => (
-                    <tr key={i}>
-                      <td className="px-4 py-3 font-semibold capitalize text-ink">{row.test}</td>
-                      <td className="px-4 py-3 font-bold text-bad-ink">
-                        {row.value} {row.unit}
-                      </td>
-                      <td className="px-4 py-3 text-ink-soft">
-                        <p>{row.normal_range || "-"}</p>
-                        {row.reference_text && <p className="mt-1 text-xs text-muted">{row.reference_text}</p>}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted">
-                        {row.source_text ? (
-                          <details>
-                            <summary className="cursor-pointer font-semibold text-ink-soft">OCR line</summary>
-                            <p className="mt-2 max-w-xs whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-muted">
-                              {row.source_text}
-                            </p>
-                          </details>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {ocrData.structured_data?.length > 0 && abnormalRows.length === 0 && (
-            <div className="card-inset mt-4 p-4 text-sm text-ink-soft">
-              No values outside the report's own flags or reference ranges were found.
-            </div>
-          )}
-
-          {ocrData.structured_data?.length === 0 && (
-            <div className="mt-4 rounded-2xl bg-warn-subtle p-4 text-sm text-warn-ink">
-              Text was extracted, but no lab values matched what the reader looks for.
-            </div>
-          )}
-
-          <div className="card-inset mt-4 p-4">
-            <p className="eyebrow mb-2">Extraction details</p>
-            <p className="text-sm text-muted">
-              Engine: {ocrData.ocr_engine || "unknown"} · Parser: {ocrData.parser_version || "unknown"} · Parsed rows: {ocrData.structured_count ?? ocrData.structured_data?.length ?? 0}
-            </p>
-            {ocrData.error_message && <p className="mt-2 text-sm font-semibold text-bad-ink">{ocrData.error_message}</p>}
-            {ocrData.extracted_text && (
-              <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap font-mono text-xs text-ink-soft">
-                {ocrData.extracted_text}
-              </pre>
-            )}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

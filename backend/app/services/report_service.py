@@ -105,4 +105,6 @@ def get_my_reports(current_user: User, db: Session) -> list[MedicalReport]:
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
 
-    return db.query(MedicalReport).filter(MedicalReport.patient_id == patient.id).all()
+    return db.query(MedicalReport).filter(MedicalReport.patient_id == patient.id).order_by(
+        MedicalReport.uploaded_at.desc()
+    ).all()

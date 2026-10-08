@@ -23,10 +23,12 @@ class Notification(Base):
         "medical_center_approved",
         "medical_center_rejected",
         "medical_center_registered",
+        "medical_center_licence_expired",
         "report_consent_approved",
         "report_consent_rejected",
         "affiliation_approved",
         "affiliation_rejected",
+        "affiliation_ended",
         "blockchain_failed",
         "imaging_processed",
         "imaging_processing_failed",
@@ -34,6 +36,8 @@ class Notification(Base):
         "doctor_verification_approved",
         "doctor_verification_rejected",
         "doctor_verification_revoked",
+        "report_question",
+        "report_reply",
         name="notification_type"
     ), nullable=False)
     message = Column(String, nullable=False)

@@ -1,6 +1,10 @@
+import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import TopNav from "../components/shell/TopNav";
 import { NotificationProvider } from "../context/NotificationContext";
+import { useAuth } from "../context/AuthContext";
+import { getMCProfile } from "../api/medicalCenter";
+import PendingApproval from "../pages/mc/PendingApproval";
 
 const MC_LINKS = [
   { label: "Overview", to: "/mc/dashboard" },
@@ -9,8 +13,32 @@ const MC_LINKS = [
   { label: "Doctors", to: "/mc/doctors" },
 ];
 
+const BADGES = { hospital: "for hospitals", clinic: "for clinics", lab: "for diagnostic labs" };
+
 // Medical center shell (Template A top bar). Routes and the auth guard in App.jsx are unchanged.
+// The center's profile is shared with pages through the outlet context; labs take no
+// doctors, so they get no Doctors tab. Until an admin approves the center (after checking
+// its licence), it sees its approval status instead of the center pages.
 function MCLayout() {
+  const { token } = useAuth();
+  const [profile, setProfile] = useState(null);
+
+  const loadProfile = useCallback(
+    () =>
+      getMCProfile(token)
+        .then((res) => setProfile(res.data))
+        .catch(() => setProfile(null)),
+    [token]
+  );
+
+  useEffect(() => {
+    if (token) loadProfile();
+  }, [token, loadProfile]);
+
+  const isLab = profile?.center_type === "lab";
+  const pending = profile && !profile.is_approved;
+  const links = pending ? [] : isLab ? MC_LINKS.filter((l) => l.to !== "/mc/doctors") : MC_LINKS;
+
   return (
     <NotificationProvider>
       <div className="min-h-screen bg-canvas font-sans text-ink">
@@ -21,13 +49,17 @@ function MCLayout() {
           Skip to content
         </a>
         <TopNav
-          links={MC_LINKS}
+          links={links}
           homePath="/mc/dashboard"
           notificationsPath="/mc/notifications"
-          badge="for medical centers"
+          badge={BADGES[profile?.center_type] ?? "for medical centers"}
         />
         <main id="main" className="app-main mx-auto w-full max-w-[1280px]">
-          <Outlet />
+          {pending ? (
+            <PendingApproval token={token} profile={profile} onUpdated={loadProfile} />
+          ) : (
+            <Outlet context={{ profile, isLab }} />
+          )}
         </main>
       </div>
     </NotificationProvider>

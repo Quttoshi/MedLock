@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 from datetime import date
 from uuid import UUID
 
@@ -33,6 +33,11 @@ class MedicalCenterRegisterRequest(BaseModel):
     center_name: str
     license_number: str
     address: str
+    # Labs only upload reports; hospitals and clinics also take affiliated doctors.
+    center_type: Literal["hospital", "clinic", "lab"] = "hospital"
+    # Provincial regulator that issued the licence, and when the licence expires
+    regulator: Literal["PHC", "SHCC", "KPHCC", "IHRA"]
+    license_expires_at: date
 
 
 class AdminRegisterRequest(BaseModel):

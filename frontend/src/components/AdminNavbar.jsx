@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useOpenNotification } from "../context/useOpenNotification";
+import { parseServerDate } from "../utils/dates";
 
 function AdminNavbar({ onMenuClick }) {
   const { user } = useAuth();
@@ -74,7 +75,7 @@ function AdminNavbar({ onMenuClick }) {
                 >
                   <p>{n.message}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {new Date(n.created_at).toLocaleDateString("en-PK", { day: "numeric", month: "short" })}
+                    {parseServerDate(n.created_at).toLocaleDateString("en-PK", { day: "numeric", month: "short" })}
                   </p>
                 </div>
               ))}

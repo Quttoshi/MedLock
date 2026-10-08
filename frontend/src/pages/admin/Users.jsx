@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getAdminUsers } from "../../api/admin";
 import FilterChips from "../../components/ui/FilterChips";
+import { parseServerDate } from "../../utils/dates";
 
 const ROLE_FILTERS = [
   { label: "All", value: "" },
@@ -69,7 +70,7 @@ function Users() {
                     </span>
                   </td>
                   <td className="px-5 py-4 text-ink-soft">
-                    {u.created_at ? new Date(u.created_at).toLocaleDateString() : "-"}
+                    {u.created_at ? parseServerDate(u.created_at).toLocaleDateString() : "-"}
                   </td>
                 </tr>
               ))}

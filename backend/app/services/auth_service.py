@@ -11,6 +11,7 @@ from app.models.user import User
 from app.models.patient import Patient
 from app.models.doctor import Doctor
 from app.models.medical_center import MedicalCenter
+from app.services.center_verification_service import ADMIN_CENTERS_PAGE, check_licence_expiry
 from app.models.admin import Admin
 from app.schemas.auth import (
     PatientRegisterRequest,
@@ -131,10 +132,14 @@ def register_doctor(data: DoctorRegisterRequest, db: Session) -> User:
     return user
 
 
+CENTER_TYPE_NAMES = {"hospital": "hospital", "clinic": "clinic", "lab": "diagnostic lab"}
+
+
 def register_medical_center(data: MedicalCenterRegisterRequest, db: Session) -> User:
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
+    check_licence_expiry(data.license_expires_at)
     if db.query(MedicalCenter).filter(MedicalCenter.license_number == data.license_number).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="License number already registered")
 
@@ -154,6 +159,9 @@ def register_medical_center(data: MedicalCenterRegisterRequest, db: Session) -> 
         name=data.center_name,
         license_number=data.license_number,
         address=data.address,
+        center_type=data.center_type,
+        regulator=data.regulator,
+        license_expires_at=data.license_expires_at,
         is_approved=False,
     )
     db.add(center)
@@ -164,7 +172,9 @@ def register_medical_center(data: MedicalCenterRegisterRequest, db: Session) -> 
         notify_admins(
             db,
             "medical_center_registered",
-            f"New medical center '{data.center_name}' (license {data.license_number}) registered and is awaiting approval.",
+            f"New {CENTER_TYPE_NAMES[data.center_type]} '{data.center_name}' ({data.regulator} licence "
+            f"{data.license_number}) registered and is awaiting approval. Check the licence on the regulator's register.",
+            link=ADMIN_CENTERS_PAGE,
         )
     except Exception:
         logger.exception("Could not notify admins about medical center registration %s", center.id)

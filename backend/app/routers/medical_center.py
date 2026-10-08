@@ -9,10 +9,14 @@ from datetime import datetime, timezone
 
 from app.models.affiliation_request import AffiliationRequest
 from app.models.doctor import Doctor
+from app.models.doctor_affiliation import DoctorAffiliation
 from app.models.medical_center import MedicalCenter
 from app.models.medical_report import MedicalReport
 from app.models.patient import Patient
 from app.models.user import User
+from app.schemas.medical_center import UpdateRegistrationRequest
+from app.services import affiliation_service as affiliations
+from app.services import center_verification_service as center_checks
 from app.services.audit_service import log_action
 from app.services.blockchain_service import log_event as blockchain_log
 from app.services.encryption_service import encrypt_file, sha256_hash
@@ -56,9 +60,32 @@ def get_profile(
         "email": current_user.email,
         "license_number": mc.license_number,
         "address": mc.address,
+        "center_type": mc.center_type,
         "is_approved": mc.is_approved,
+        "rejection_reason": mc.rejection_reason,
+        **center_checks.licence_summary(mc),
         "approved_at": mc.approved_at,
     }
+
+
+@router.patch("/registration")
+def update_registration(
+    body: UpdateRegistrationRequest,
+    request: Request = None,
+    current_user: User = Depends(require_role(["medical_center"])),
+    db: Session = Depends(get_db),
+):
+    """A center waiting for approval (or rejected) corrects its licence details and goes
+    back for review."""
+    mc = db.query(MedicalCenter).filter(MedicalCenter.user_id == current_user.id).first()
+    if not mc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical center profile not found")
+    center_checks.resubmit(mc, body.regulator, body.license_number, body.license_expires_at, body.address, db)
+    log_action(
+        db, action="medical_center_resubmitted", performed_by=current_user.id, entity_type="medical_center",
+        entity_id=mc.id, details={"regulator": mc.regulator, "license_number": mc.license_number}, request=request,
+    )
+    return {"status": center_checks.center_status(mc), **center_checks.licence_summary(mc)}
 
 
 @router.get("/doctors")
@@ -66,20 +93,39 @@ def get_doctors(
     current_user: User = Depends(require_role(["medical_center"])),
     db: Session = Depends(get_db),
 ):
-    """List all doctors registered under this medical center."""
+    """List the doctors currently affiliated with this medical center."""
     mc = _get_mc(current_user, db)
-    doctors = db.query(Doctor).filter(Doctor.medical_center_id == mc.id).all()
+    affiliations = db.query(DoctorAffiliation).filter(
+        DoctorAffiliation.medical_center_id == mc.id,
+        DoctorAffiliation.status == "active",
+    ).order_by(DoctorAffiliation.joined_at).all()
     return [
         {
-            "id": str(d.id),
-            "name": d.user.full_name if d.user else None,
-            "email": d.user.email if d.user else None,
-            "specialization": d.specialization,
-            "license_number": d.license_number,
-            "is_verified": d.is_verified,
+            "id": str(a.doctor.id),
+            "name": a.doctor.user.full_name if a.doctor.user else None,
+            "email": a.doctor.user.email if a.doctor.user else None,
+            "specialization": a.doctor.specialization,
+            "license_number": a.doctor.license_number,
+            "is_verified": a.doctor.is_verified,
+            "joined_at": a.joined_at,
         }
-        for d in doctors
+        for a in affiliations
     ]
+
+
+@router.post("/doctors/{doctor_id}/remove")
+def remove_doctor(
+    doctor_id: str,
+    body: dict = None,
+    request: Request = None,
+    current_user: User = Depends(require_role(["medical_center"])),
+    db: Session = Depends(get_db),
+):
+    """End a doctor's affiliation with this medical center."""
+    mc = _get_mc(current_user, db)
+    affiliation = affiliations.get_active_affiliation_or_404(uuid.UUID(doctor_id), mc.id, db)
+    affiliations.end_affiliation(affiliation, current_user, (body or {}).get("reason"), db, request)
+    return {"doctor_id": doctor_id, "status": "ended"}
 
 
 @router.post("/reports/upload", status_code=201)
@@ -223,9 +269,12 @@ def approve_affiliation(
     current_user: User = Depends(require_role(["medical_center"])),
     db: Session = Depends(get_db),
 ):
-    """Approve a doctor's affiliation and verify them, after checking the license number
-    the medical center reads from the doctor's credential against the one they registered."""
+    """Approve a doctor's affiliation after checking the license number the medical center
+    reads from the doctor's credential against the one they registered. A doctor who is
+    not yet verified becomes verified by this center."""
     mc = _get_mc(current_user, db)
+    if affiliations.is_lab(mc):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Diagnostic labs do not take affiliated doctors")
     req = db.query(AffiliationRequest).filter(
         AffiliationRequest.id == uuid.UUID(request_id),
         AffiliationRequest.medical_center_id == mc.id,
@@ -253,20 +302,23 @@ def approve_affiliation(
 
     req.status = "approved"
     req.decided_at = datetime.now(timezone.utc)
-    # Link the doctor to this MC and mark them verified by it
-    req.doctor.medical_center_id = mc.id
-    mark_verified(req.doctor, "medical_center", current_user, f"License checked by {mc.name}")
+    affiliations.add_affiliation(req.doctor, mc, req, db)
+    # A doctor already verified (by another center or an admin) keeps that verification.
+    newly_verified = not req.doctor.is_verified
+    if newly_verified:
+        mark_verified(req.doctor, "medical_center", current_user, f"License checked by {mc.name}")
     db.commit()
 
     log_action(
-        db, action="doctor_verified_by_mc", performed_by=current_user.id,
-        entity_type="doctor", entity_id=req.doctor.id,
-        details={"affiliation_request_id": str(req.id)}, request=request,
+        db, action="doctor_verified_by_mc" if newly_verified else "affiliation_approved",
+        performed_by=current_user.id, entity_type="doctor", entity_id=req.doctor.id,
+        details={"affiliation_request_id": str(req.id), "medical_center_id": str(mc.id)}, request=request,
     )
-    create_notification(
-        db, req.doctor.user_id, "affiliation_approved",
-        f"{mc.name} approved your affiliation and verified your license. You can now access patient records you are granted.",
+    message = (
+        f"{mc.name} approved your affiliation and verified your license. You can now access patient records you are granted."
+        if newly_verified else f"{mc.name} approved your affiliation. You are now listed as one of its doctors."
     )
+    create_notification(db, req.doctor.user_id, "affiliation_approved", message)
 
     return {"id": str(req.id), "status": req.status, "doctor_name": req.doctor.user.full_name, "is_verified": True}
 
@@ -319,7 +371,9 @@ def get_uploaded_reports(
 ):
     """List all reports this medical center has uploaded."""
     mc = _get_mc(current_user, db)
-    reports = db.query(MedicalReport).filter(MedicalReport.medical_center_id == mc.id).all()
+    reports = db.query(MedicalReport).filter(MedicalReport.medical_center_id == mc.id).order_by(
+        MedicalReport.uploaded_at.desc()
+    ).all()
     return [
         {
             "id": str(r.id),
