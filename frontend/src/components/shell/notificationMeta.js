@@ -1,4 +1,4 @@
-import { Bell, Clock, ShieldCheck, ShieldAlert, Upload, Lock, MessageCircleQuestion, MessageSquareReply } from "lucide-react";
+import { Bell, Clock, ShieldCheck, ShieldAlert, Upload, Lock, MessageCircleQuestion, MessageSquareReply, Siren, Flag } from "lucide-react";
 import { parseServerDate } from "../../utils/dates";
 
 // One place for how each notification type looks, shared by the bell and the
@@ -13,6 +13,10 @@ const TYPE_ICON = {
   mc_upload: { Icon: Upload, tone: "bg-brand-subtle text-brand" },
   report_question: { Icon: MessageCircleQuestion, tone: "bg-brand-subtle text-brand" },
   report_reply: { Icon: MessageSquareReply, tone: "bg-brand-subtle text-brand" },
+  records_shared: { Icon: ShieldCheck, tone: "bg-ok-subtle text-ok-ink" },
+  emergency_access_started: { Icon: Siren, tone: "bg-bad-subtle text-bad-ink" },
+  emergency_access_ended: { Icon: Siren, tone: "bg-plain-subtle text-plain-ink" },
+  emergency_access_flagged: { Icon: Flag, tone: "bg-warn-subtle text-warn-ink" },
 };
 
 export function notificationIcon(type) {

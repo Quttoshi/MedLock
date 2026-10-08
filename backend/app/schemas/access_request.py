@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 from uuid import UUID
 
@@ -6,13 +6,24 @@ from pydantic import BaseModel
 
 
 class AccessRequestByEmail(BaseModel):
-    patient_email: str
+    """The patient is identified by email, or by CNIC together with date of birth."""
+    patient_email: Optional[str] = None
+    patient_cnic: Optional[str] = None
+    patient_dob: Optional[date] = None
     reason: Optional[str] = None
+
+
+class ShareRecordsRequest(BaseModel):
+    doctor_id: UUID
+    # Optional note to the doctor, e.g. why the patient is sharing
+    note: Optional[str] = None
 
 
 class AccessRequestResponse(BaseModel):
     id: UUID
     status: str
+    # "doctor" (the doctor asked) or "patient" (the patient shared directly)
+    initiated_by: str = "doctor"
     reason: Optional[str] = None
     requested_at: datetime
     decided_at: Optional[datetime] = None

@@ -6,6 +6,7 @@ import AuthShell from "../../components/shell/AuthShell";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { CENTER_TYPES } from "../../constants/centerTypes";
 import { REGULATORS } from "../../constants/regulators";
+import { CNIC_PLACEHOLDER, formatCnicInput, isValidCnic } from "../../utils/cnic";
 
 const ROLE_ENDPOINTS = {
   patient: "/auth/register",
@@ -60,6 +61,7 @@ function RegisterPage() {
     regulator: "",
     license_expires_at: "",
     date_of_birth: "",
+    cnic: "",
     blood_group: "",
     gender: "",
     emergency_contact_name: "",
@@ -84,6 +86,11 @@ function RegisterPage() {
     else if (formData.password.length < 8) e.password = "Password must be at least 8 characters.";
     else if (!/(?=.*[A-Z])(?=.*[0-9])/.test(formData.password))
       e.password = "Password must contain at least one uppercase letter and one number.";
+
+    if (role === "patient") {
+      if (!isValidCnic(formData.cnic)) e.cnic = "Enter your 13-digit CNIC, B-Form or NICOP number.";
+      if (!formData.date_of_birth) e.date_of_birth = "Date of birth is required.";
+    }
 
     if (!formData.confirmPassword) e.confirmPassword = "Please confirm your password.";
     else if (formData.password !== formData.confirmPassword) e.confirmPassword = "Passwords do not match.";
@@ -120,7 +127,8 @@ function RegisterPage() {
 
     const payload = { name: formData.name, email: formData.email, password: formData.password };
     if (role === "patient") {
-      if (formData.date_of_birth) payload.date_of_birth = formData.date_of_birth;
+      payload.cnic = formData.cnic;
+      payload.date_of_birth = formData.date_of_birth;
       if (formData.blood_group) payload.blood_group = formData.blood_group;
       if (formData.gender) payload.gender = formData.gender;
       if (formData.emergency_contact_name) payload.emergency_contact_name = formData.emergency_contact_name;
@@ -191,9 +199,26 @@ function RegisterPage() {
         {role === "patient" && (
           <>
             <div>
-              <label htmlFor="f-date_of_birth" className="field-label">
-                Date of birth <span className="ml-1.5 font-normal text-muted">(optional)</span>
-              </label>
+              <label htmlFor="f-cnic" className="field-label">CNIC / B-Form / NICOP</label>
+              <input
+                id="f-cnic"
+                name="cnic"
+                inputMode="numeric"
+                value={formData.cnic}
+                onChange={(e) => setFormData({ ...formData, cnic: formatCnicInput(e.target.value) })}
+                placeholder={CNIC_PLACEHOLDER}
+                aria-invalid={errors.cnic ? "true" : undefined}
+                aria-describedby="f-cnic-hint"
+                className="field font-mono"
+              />
+              <p id="f-cnic-hint" className="field-hint">
+                Hospitals and labs use it with your date of birth to send you reports. Stored encrypted.
+              </p>
+              {errors.cnic && <p className="field-error">{errors.cnic}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="f-date_of_birth" className="field-label">Date of birth</label>
               <input
                 id="f-date_of_birth"
                 type="date"
@@ -201,8 +226,10 @@ function RegisterPage() {
                 value={formData.date_of_birth}
                 onChange={handleChange}
                 max={new Date().toISOString().split("T")[0]}
+                aria-invalid={errors.date_of_birth ? "true" : undefined}
                 className="field"
               />
+              {errors.date_of_birth && <p className="field-error">{errors.date_of_birth}</p>}
             </div>
 
             <div>

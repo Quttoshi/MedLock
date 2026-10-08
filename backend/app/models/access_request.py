@@ -15,6 +15,9 @@ class AccessRequest(Base):
     doctor_id = Column(UUID(as_uuid=True), ForeignKey("doctors.id", ondelete="CASCADE"), nullable=False)
     patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
     reason = Column(String, nullable=False, default="")
+    # "doctor" when a doctor asked for access, "patient" when the patient shared their
+    # records with the doctor directly.
+    initiated_by = Column(String, nullable=False, default="doctor", server_default="doctor")
     status = Column(SAEnum("pending", "approved", "denied", "revoked", name="access_request_status"), default="pending", nullable=False)
     expires_at = Column(DateTime, nullable=True)
     requested_at = Column(DateTime, default=datetime.utcnow, nullable=False)

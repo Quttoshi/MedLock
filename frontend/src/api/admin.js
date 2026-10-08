@@ -59,5 +59,12 @@ export const approveMC = (token, id, licenseExpiresAt, note) =>
     { headers: getHeaders(token) }
   );
 
+// Emergency ("break the glass") accesses, misuse reports first
+export const getEmergencyAccesses = (token) =>
+  api.get("/admin/emergency-accesses", { headers: getHeaders(token) });
+
+export const reviewEmergencyAccess = (token, id, note) =>
+  api.post(`/admin/emergency-accesses/${id}/review`, { note }, { headers: getHeaders(token) });
+
 export const rejectMC = (token, id, reason) =>
   api.patch(`/admin/medical-centers/${id}/reject?reason=${encodeURIComponent(reason)}`, {}, { headers: getHeaders(token) });

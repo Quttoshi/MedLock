@@ -17,7 +17,7 @@ def _db(existing):
     """db.query(Model).filter(...).first() returns a fixture per model."""
     doctor = SimpleNamespace(id=uuid.uuid4())
     patient_user = SimpleNamespace(id=uuid.uuid4(), full_name="Pat", email="pat@example.com")
-    patient = SimpleNamespace(id=uuid.uuid4())
+    patient = SimpleNamespace(id=uuid.uuid4(), user=patient_user)
     results = {Doctor: doctor, User: patient_user, Patient: patient, AccessRequest: existing}
 
     def query(model):
@@ -43,7 +43,7 @@ def no_notifications(monkeypatch):
 
 
 def _submit(db):
-    data = SimpleNamespace(patient_email="pat@example.com", reason="follow-up")
+    data = SimpleNamespace(patient_email="pat@example.com", patient_cnic=None, patient_dob=None, reason="follow-up")
     return svc.create_access_request_by_email(data, SimpleNamespace(id=uuid.uuid4(), full_name="Doc"), db)
 
 

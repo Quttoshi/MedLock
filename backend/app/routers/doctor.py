@@ -17,7 +17,8 @@ from datetime import datetime, timezone
 
 from app.services.encryption_service import decrypt_file
 from app.services.storage_service import get_supabase, BUCKET_NAME
-from app.services.access_request_service import check_doctor_has_access, display_status
+from app.services import emergency_service as emergency
+from app.services.access_request_service import check_doctor_has_access, display_status, has_consented_access
 from app.services.audit_service import log_action
 from app.services.blockchain_service import verify_report_integrity
 from app.services import affiliation_service as affiliations
@@ -82,6 +83,22 @@ def get_accessible_patients(
             "date_of_birth": patient.date_of_birth,
             "blood_group": patient.blood_group,
             "gender": patient.gender,
+        }
+
+    for access in emergency.for_doctor(doctor, db):
+        info = access["patient"]
+        if info["id"] in seen_patients:
+            seen_patients[info["id"]]["emergency_until"] = access["expires_at"]
+            continue
+        patient = db.query(Patient).filter(Patient.id == uuid.UUID(info["id"])).first()
+        seen_patients[info["id"]] = {
+            "id": info["id"],
+            "name": info["name"],
+            "email": None,
+            "date_of_birth": patient.date_of_birth if patient else None,
+            "blood_group": info["blood_group"],
+            "gender": info["gender"],
+            "emergency_until": access["expires_at"],
         }
 
     return list(seen_patients.values())
@@ -252,6 +269,9 @@ def download_patient_report(
 
     if not check_doctor_has_access(doctor, report.id, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this report")
+    emergency.record_report_opened(
+        doctor, report, db, has_consent=has_consented_access(doctor.id, report.patient_id, db),
+    )
     if report.report_type == "imaging":
         from app.routers.reports import imaging_archive_response
         return imaging_archive_response(report)

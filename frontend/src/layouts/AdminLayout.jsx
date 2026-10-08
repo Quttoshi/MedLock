@@ -7,6 +7,7 @@ const ADMIN_LINKS = [
   { label: "Users", to: "/admin/users" },
   { label: "Doctors", to: "/admin/doctors" },
   { label: "Centers", to: "/admin/medical-centers" },
+  { label: "Emergency", to: "/admin/emergency" },
   { label: "Audit", to: "/admin/audit-logs" },
 ];
 

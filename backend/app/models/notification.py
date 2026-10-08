@@ -38,6 +38,10 @@ class Notification(Base):
         "doctor_verification_revoked",
         "report_question",
         "report_reply",
+        "records_shared",
+        "emergency_access_started",
+        "emergency_access_ended",
+        "emergency_access_flagged",
         name="notification_type"
     ), nullable=False)
     message = Column(String, nullable=False)

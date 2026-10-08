@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Check, X, Clock, FileText, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Check, X, Clock, FileText, ShieldCheck, ShieldAlert, Share2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import StatusPill from "../../components/ui/StatusPill";
 import { doctorLabel, initials } from "../../adapters/patientStory";
 import { parseServerDate } from "../../utils/dates";
+import ShareRecordsDialog from "../../components/ShareRecordsDialog";
 
 // How the doctor was verified, so the patient can judge the request
 function VerificationNote({ request }) {
@@ -135,8 +136,14 @@ function HistoryCard({ request, onRevoke, actionLoading }) {
           {request.reason?.trim() && <p className="mt-1 text-sm leading-6 text-muted">{request.reason}</p>}
 
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
-            <span>Requested: {formatDate(request.requested_at)}</span>
-            {request.decided_at && <span>Decided: {formatDate(request.decided_at)}</span>}
+            {request.initiated_by === "patient" ? (
+              <span className="font-semibold text-ink-soft">Shared by you: {formatDate(request.decided_at || request.requested_at)}</span>
+            ) : (
+              <>
+                <span>Requested: {formatDate(request.requested_at)}</span>
+                {request.decided_at && <span>Decided: {formatDate(request.decided_at)}</span>}
+              </>
+            )}
             {request.expires_at && request.status === "approved" && (
               <span className="font-semibold text-warn-ink">Expires: {formatDate(request.expires_at)}</span>
             )}
@@ -170,6 +177,7 @@ function AccessRequests() {
   const [activeTab, setActiveTab] = useState("pending");
   const [actionLoading, setActionLoading] = useState(null);
   const [toast, setToast] = useState(null);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     fetchRequests();
@@ -193,6 +201,14 @@ function AccessRequests() {
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  // ── Share directly with a doctor ─────────────────────
+  const handleShared = (grant, doctor) => {
+    setSharing(false);
+    setRequests((prev) => [grant, ...prev.filter((r) => r.id !== grant.id)]);
+    setActiveTab("approved");
+    showToast(`Your records are now shared with ${doctorLabel(doctor.name)} for 30 days.`);
   };
 
   // ── Approve ──────────────────────────────────────────
@@ -278,9 +294,20 @@ function AccessRequests() {
       <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
         Who can see your <em>records</em>
       </h1>
-      <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
-        Doctors ask, and you decide. Approving gives a doctor access for 30 days, and you can take it back at any time. Every decision is logged.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
+          Doctors ask, and you decide. You can also share your records with a doctor yourself, for example before a
+          visit. Access lasts 30 days, you can take it back at any time, and every decision is logged.
+        </p>
+        <button type="button" onClick={() => setSharing(true)} className="btn btn-primary">
+          <Share2 aria-hidden="true" size={18} />
+          Share with a doctor
+        </button>
+      </div>
+
+      {sharing && (
+        <ShareRecordsDialog token={token} onClose={() => setSharing(false)} onShared={handleShared} />
+      )}
 
       {/* Pending alert */}
       {counts.pending > 0 && (

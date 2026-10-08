@@ -9,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.rate_limit import limiter
-from app.routers import auth, notifications, reports, access_requests, admin, doctor, medical_center, imaging, threads
+from app.routers import auth, notifications, reports, access_requests, admin, doctor, medical_center, imaging, threads, patients, emergency
 from app.services import background_jobs
 
 
@@ -40,6 +40,8 @@ app.include_router(auth.router)
 # Before reports: its /reports/imaging/upload must not be shadowed by /reports/{report_id} routes.
 app.include_router(imaging.router)
 app.include_router(threads.router)
+app.include_router(patients.router)
+app.include_router(emergency.router)
 app.include_router(reports.router)
 app.include_router(notifications.router)
 app.include_router(access_requests.router)

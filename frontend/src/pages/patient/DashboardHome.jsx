@@ -4,6 +4,8 @@ import { Upload, ShieldCheck, Clock, FileText, ChevronRight } from "lucide-react
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import StatusPill from "../../components/ui/StatusPill";
+import IdentityCard from "../../components/IdentityCard";
+import EmergencyAlerts from "../../components/EmergencyAlerts";
 import {
   activeAccess,
   doctorLabel,
@@ -82,10 +84,12 @@ function DashboardHome() {
             Upload a record
           </Link>
         </section>
+        <IdentityCard token={token} />
       </aside>
 
       {/* Middle: the story */}
       <section aria-labelledby="story-heading" className="min-w-0">
+        <EmergencyAlerts token={token} />
         {pending.length > 0 && (
           <div className="card mb-6 flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">

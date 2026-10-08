@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getPatientReports, downloadReport } from "../../api/doctor";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, MessageCircleQuestion } from "lucide-react";
+import { ArrowLeft, MessageCircleQuestion, Siren, Phone } from "lucide-react";
+import { getActiveEmergencies } from "../../api/emergency";
 import { useUnreadThreads } from "../../context/useUnreadThreads";
 import { parseServerDate } from "../../utils/dates";
 
@@ -13,12 +14,17 @@ function PatientReports() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(null);
+  // Set when this patient's records are open through emergency access
+  const [emergency, setEmergency] = useState(null);
 
   useEffect(() => {
     getPatientReports(token, patientId)
       .then((res) => setReports(res.data))
       .catch(() => setReports([]))
       .finally(() => setLoading(false));
+    getActiveEmergencies(token)
+      .then((res) => setEmergency(res.data.find((a) => a.patient.id === patientId) || null))
+      .catch(() => setEmergency(null));
   }, [token, patientId]);
 
   const handleDownload = async (reportId, filename) => {
@@ -47,6 +53,26 @@ function PatientReports() {
         Patient <em>records</em>
       </h1>
       <p className="mt-3 text-sm text-muted">Approved medical records for this patient. Read only.</p>
+
+      {emergency && (
+        <div className="mt-5 rounded-2xl bg-bad-subtle p-4 text-sm text-bad-ink">
+          <p className="flex items-center gap-2 font-bold">
+            <Siren aria-hidden="true" size={18} />
+            Emergency access for {emergency.patient.name} until{" "}
+            {parseServerDate(emergency.expires_at).toLocaleString("en-PK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+          </p>
+          <p className="mt-1">Every report you open is recorded and the patient can see it.</p>
+          {emergency.patient.emergency_contact_phone && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-ink">
+              <Phone aria-hidden="true" size={15} />
+              Emergency contact: {emergency.patient.emergency_contact_name || "Not named"}{" "}
+              <a href={`tel:${emergency.patient.emergency_contact_phone}`} className="link font-mono">
+                {emergency.patient.emergency_contact_phone}
+              </a>
+            </p>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <p className="mt-10 text-center text-muted">Loading...</p>

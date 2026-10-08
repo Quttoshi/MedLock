@@ -14,7 +14,7 @@ class BlockchainLog(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     report_id = Column(UUID(as_uuid=True), ForeignKey("medical_reports.id", ondelete="CASCADE"), nullable=False)
     transaction_hash = Column(String, nullable=True)
-    event_type = Column(SAEnum("upload", "access_grant", "access_deny", "revoke", "delete", name="blockchain_event_type"), nullable=False)
+    event_type = Column(SAEnum("upload", "access_grant", "access_deny", "revoke", "delete", "emergency_access", name="blockchain_event_type"), nullable=False)
     file_hash = Column(String, nullable=False)
     block_number = Column(Integer, nullable=True)
     network = Column(String, default="sepolia", nullable=False)

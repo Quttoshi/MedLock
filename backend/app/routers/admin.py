@@ -25,6 +25,7 @@ from app.schemas.admin import (
 )
 from app.models.doctor_verification_request import DoctorVerificationRequest
 from app.services import center_verification_service as center_checks
+from app.services import emergency_service as emergency
 from app.services import doctor_verification_service as verification
 from app.services.audit_service import log_action
 from app.services.notification_service import create_notification
@@ -297,16 +298,38 @@ def reject_medical_center(
     return _center_item(center)
 
 
+# ── Emergency access review ──────────────────────────────
+
+@router.get("/emergency-accesses")
+def list_emergency_accesses(
+    current_user: User = Depends(require_role(["admin"])),
+    db: Session = Depends(get_db),
+):
+    """Every emergency access, with misuse reports awaiting review first."""
+    return emergency.for_admin(db)
+
+
+@router.post("/emergency-accesses/{access_id}/review")
+def review_emergency_access(
+    access_id: UUID,
+    body: dict,
+    request: Request,
+    current_user: User = Depends(require_role(["admin"])),
+    db: Session = Depends(get_db),
+):
+    return emergency.review(access_id, current_user, (body or {}).get("note"), db, request)
+
+
 # ── Audit Logs ───────────────────────────────────────────
 
 # Groups of related audit actions, for the audit log's filters.
 AUDIT_CATEGORIES = {
-    "accounts": ("register", "email_verified", "login", "logout"),
+    "accounts": ("register", "email_verified", "login", "logout", "identity_updated"),
     "reports": (
         "report_upload", "mc_report_upload", "imaging_upload", "mc_imaging_upload",
         "report_approved", "report_rejected", "integrity_verified",
     ),
-    "access": ("access_request_submitted", "access_approved", "access_denied", "access_revoked"),
+    "access": ("access_request_submitted", "access_approved", "access_denied", "access_revoked", "access_shared"),
     "doctors": (
         "doctor_verified", "doctor_unverified", "doctor_verified_by_mc", "doctor_verification_requested",
         "doctor_verification_approved", "doctor_verification_rejected", "doctor_verification_failed",
@@ -315,6 +338,10 @@ AUDIT_CATEGORIES = {
     ),
     "centers": ("medical_center_approved", "medical_center_rejected", "medical_center_resubmitted"),
     "questions": ("thread_started", "thread_resolved", "thread_reopened"),
+    "emergency": (
+        "emergency_access_started", "emergency_access_ended",
+        "emergency_access_flagged", "emergency_access_reviewed",
+    ),
 }
 
 @router.get("/audit-logs", response_model=List[AuditLogItem])

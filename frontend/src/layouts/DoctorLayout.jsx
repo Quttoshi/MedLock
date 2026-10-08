@@ -7,6 +7,7 @@ const DOCTOR_LINKS = [
   { label: "Patients", to: "/doctor/patients" },
   { label: "Requests", to: "/doctor/access-requests" },
   { label: "Affiliation", to: "/doctor/affiliation" },
+  { label: "Emergency", to: "/doctor/emergency" },
 ];
 
 // Doctor shell (Template A top bar). Routes and the auth guard in App.jsx are unchanged.
