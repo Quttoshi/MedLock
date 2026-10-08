@@ -6,9 +6,10 @@ from unittest.mock import MagicMock
 from app.services.access_request_service import check_doctor_has_access
 
 
-def _db(report, access):
+def _db(report, access, emergency=None):
+    """The report, the patient's grant, then any active emergency access."""
     db = MagicMock()
-    db.query.return_value.filter.return_value.first.side_effect = [report, access]
+    db.query.return_value.filter.return_value.first.side_effect = [report, access, emergency]
     return db
 
 
@@ -53,3 +54,14 @@ def test_current_and_other_statuses_are_shown_as_stored():
     assert display_status(_access()) == "approved"
     for status in ("pending", "denied", "revoked"):
         assert display_status(SimpleNamespace(status=status, expires_at=None)) == status
+
+
+def test_active_emergency_access_opens_the_record_without_a_grant():
+    report = _report()
+    emergency = SimpleNamespace(id=uuid.uuid4())
+    assert check_doctor_has_access(doctor, report.id, _db(report, None, emergency)) is True
+
+
+def test_emergency_access_does_not_open_unapproved_uploads():
+    report = _report(approved=False)
+    assert check_doctor_has_access(doctor, report.id, _db(report, None, SimpleNamespace(id=uuid.uuid4()))) is False

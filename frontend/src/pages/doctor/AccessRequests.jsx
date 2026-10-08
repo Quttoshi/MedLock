@@ -4,6 +4,8 @@ import { Plus } from "lucide-react";
 import { getMyAccessRequests, submitAccessRequest } from "../../api/doctor";
 import StatusPill from "../../components/ui/StatusPill";
 import { parseServerDate } from "../../utils/dates";
+import PatientLookupFields from "../../components/PatientLookupFields";
+import { EMPTY_LOOKUP, lookupComplete, lookupPayload } from "../../utils/patientLookup";
 
 function DoctorAccessRequests() {
   const { token } = useAuth();
@@ -11,7 +13,8 @@ function DoctorAccessRequests() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ patient_email: "", reason: "" });
+  const [form, setForm] = useState({ reason: "" });
+  const [patient, setPatient] = useState(EMPTY_LOOKUP);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -31,20 +34,21 @@ function DoctorAccessRequests() {
     : requests.filter((r) => r.status === filter);
 
   const handleSubmit = async () => {
-    if (!form.patient_email.trim()) {
-      setError("Patient email is required.");
+    if (!lookupComplete(patient)) {
+      setError("Enter the patient's email, or their CNIC and date of birth.");
       return;
     }
     setSubmitting(true);
     setError("");
     try {
       const res = await submitAccessRequest(token, {
-        patient_email: form.patient_email.trim(),
+        ...lookupPayload(patient),
         reason: form.reason.trim() || null,
       });
       const d = res.data;
-      setSuccess(`Access request sent to ${d.patient_name || d.patient_email} for ${d.reports_requested} report(s).${d.already_pending > 0 ? ` ${d.already_pending} already pending.` : ""}`);
-      setForm({ patient_email: "", reason: "" });
+      setSuccess(`Access request sent to ${d.patient_name || d.patient_email}. They will be asked to approve it.`);
+      setForm({ reason: "" });
+      setPatient(EMPTY_LOOKUP);
       setShowForm(false);
       fetchRequests();
     } catch (e) {
@@ -67,7 +71,7 @@ function DoctorAccessRequests() {
         </div>
         <button
           type="button"
-          onClick={() => { setShowForm(true); setError(""); setSuccess(""); setForm({ patient_email: "", reason: "" }); }}
+          onClick={() => { setShowForm(true); setError(""); setSuccess(""); setForm({ reason: "" }); setPatient(EMPTY_LOOKUP); }}
           className="btn btn-primary"
         >
           <Plus aria-hidden="true" size={18} />
@@ -124,6 +128,9 @@ function DoctorAccessRequests() {
                     <StatusPill tone={TONE[req.status] ?? "plain"}>
                       <span className="capitalize">{req.status}</span>
                     </StatusPill>
+                    {req.initiated_by === "patient" && (
+                      <p className="mt-1 text-[13px] text-muted">Shared by patient</p>
+                    )}
                   </td>
                   <td className="px-5 py-4 text-ink-soft">{fmt(req.requested_at || req.created_at)}</td>
                   <td className="px-5 py-4 text-ink-soft">{fmt(req.expires_at)}</td>
@@ -150,17 +157,7 @@ function DoctorAccessRequests() {
             )}
 
             <div className="mt-5 space-y-4">
-              <div>
-                <label htmlFor="patient_email" className="field-label">Patient email</label>
-                <input
-                  id="patient_email"
-                  type="email"
-                  value={form.patient_email}
-                  onChange={(e) => setForm({ ...form, patient_email: e.target.value })}
-                  placeholder="patient@example.com"
-                  className="field"
-                />
-              </div>
+              <PatientLookupFields idPrefix="request-patient" value={patient} onChange={setPatient} />
               <div>
                 <label htmlFor="reason" className="field-label">
                   Clinical reason <span className="ml-1.5 font-normal text-muted">(optional)</span>

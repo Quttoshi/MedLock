@@ -22,6 +22,7 @@ import AdminUsers from "./pages/admin/Users";
 import AdminDoctors from "./pages/admin/Doctors";
 import AdminMedicalCenters from "./pages/admin/MedicalCenters";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
+import AdminEmergencyAccess from "./pages/admin/EmergencyAccess";
 import AdminNotifications from "./pages/admin/Notifications";
 
 // Doctor
@@ -32,6 +33,7 @@ import DoctorNotifications from "./pages/doctor/Notifications";
 import DoctorAffiliation from "./pages/doctor/Affiliation";
 import MyPatients from "./pages/doctor/MyPatients";
 import PatientReports from "./pages/doctor/PatientReports";
+import DoctorEmergency from "./pages/doctor/Emergency";
 import ReportViewer from "./pages/doctor/ReportViewer";
 
 // Medical Center
@@ -126,6 +128,7 @@ function App() {
         <Route path="doctors" element={<AdminDoctors />} />
         <Route path="medical-centers" element={<AdminMedicalCenters />} />
         <Route path="audit-logs" element={<AdminAuditLogs />} />
+        <Route path="emergency" element={<AdminEmergencyAccess />} />
         <Route path="notifications" element={<AdminNotifications />} />
       </Route>
 
@@ -144,6 +147,7 @@ function App() {
         <Route path="patients/:patientId/reports/:reportId/view" element={<ReportViewer />} />
         <Route path="access-requests" element={<DoctorAccessRequests />} />
         <Route path="affiliation" element={<DoctorAffiliation />} />
+        <Route path="emergency" element={<DoctorEmergency />} />
         <Route path="notifications" element={<DoctorNotifications />} />
       </Route>
 

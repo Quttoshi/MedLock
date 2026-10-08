@@ -41,6 +41,10 @@ EMAIL_TITLES = {
     "doctor_verification_revoked": "Your verification has been removed",
     "report_question": "New question about a report",
     "report_reply": "New reply about a report",
+    "records_shared": "A patient shared their records with you",
+    "emergency_access_started": "Emergency access to medical records",
+    "emergency_access_ended": "Emergency access has ended",
+    "emergency_access_flagged": "Emergency access reported as possible misuse",
 }
 
 # Page a notification opens, by recipient role and notification type, used when the
@@ -50,11 +54,14 @@ DEFAULT_LINKS = {
         "access_request": "/patient/access-requests",
         "report_uploaded": "/patient/reports",
         "report_approval_required": "/patient/reports",
+        "emergency_access_started": "/patient/dashboard#emergency",
         "imaging_processed": "/patient/reports",
         "imaging_processing_failed": "/patient/reports",
     },
     "doctor": {
         "access_approved": "/doctor/patients",
+        "records_shared": "/doctor/patients",
+        "emergency_access_ended": "/doctor/emergency",
         "access_denied": "/doctor/access-requests",
         "access_revoked": "/doctor/access-requests",
         "affiliation_approved": "/doctor/affiliation",
@@ -78,6 +85,8 @@ DEFAULT_LINKS = {
         "medical_center_registered": "/admin/medical-centers",
         "blockchain_failed": "/admin/audit-logs",
         "doctor_verification_requested": "/admin/doctors",
+        "emergency_access_started": "/admin/emergency",
+        "emergency_access_flagged": "/admin/emergency",
     },
 }
 # Fallback page per role when a notification type has no specific page

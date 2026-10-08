@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { FileText, Upload, X, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import PatientLookupFields from "../../components/PatientLookupFields";
+import { EMPTY_LOOKUP, lookupComplete, lookupPayload } from "../../utils/patientLookup";
 import { uploadPatientImaging, uploadPatientReport } from "../../api/medicalCenter";
 import {
   STANDARD_MAX_MB,
@@ -19,8 +21,8 @@ const typeLabel = (type) => type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.to
 
 function MCUploadReport() {
   const { token } = useAuth();
+  const [patient, setPatient] = useState(EMPTY_LOOKUP);
   const [form, setForm] = useState({
-    patient_email: "",
     report_type: "",
   });
   const [file, setFile] = useState(null);
@@ -30,8 +32,8 @@ function MCUploadReport() {
 
   const handleSubmit = async () => {
     const imaging = isDicomFile(file);
-    if (!form.patient_email.trim() || (!form.report_type && !imaging) || !file) {
-      setError("All fields are required: patient email, report type and file.");
+    if (!lookupComplete(patient) || (!form.report_type && !imaging) || !file) {
+      setError("All fields are required: the patient (email, or CNIC and date of birth), report type and file.");
       return;
     }
     if (imaging && file.size > IMAGING_MAX_MB * 1024 * 1024) {
@@ -45,7 +47,7 @@ function MCUploadReport() {
 
     try {
       const formData = new FormData();
-      formData.append("patient_email", form.patient_email.trim());
+      Object.entries(lookupPayload(patient)).forEach(([key, value]) => formData.append(key, value));
       if (!imaging) formData.append("report_type", form.report_type);
       formData.append("file", file);
 
@@ -60,7 +62,8 @@ function MCUploadReport() {
           "Report uploaded successfully. The patient has been notified and must approve it before it appears in their record."
         );
       }
-      setForm({ patient_email: "", report_type: "" });
+      setForm({ report_type: "" });
+      setPatient(EMPTY_LOOKUP);
       setFile(null);
       document.getElementById("file-input").value = "";
     } catch (e) {
@@ -86,17 +89,7 @@ function MCUploadReport() {
 
       <div className="card card-pad mt-8">
         <div className="space-y-6">
-          <div>
-            <label htmlFor="patient-email" className="field-label">Patient email</label>
-            <input
-              id="patient-email"
-              type="email"
-              value={form.patient_email}
-              onChange={(e) => setForm({ ...form, patient_email: e.target.value })}
-              placeholder="The patient's registered email"
-              className="field"
-            />
-          </div>
+          <PatientLookupFields idPrefix="upload-patient" value={patient} onChange={setPatient} />
 
           {/* Report type (imaging studies carry their own scan type) */}
           {isDicomFile(file) ? (

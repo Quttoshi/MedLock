@@ -1,5 +1,7 @@
 """Imaging (DICOM) endpoints for patients, medical centers and doctors."""
 import uuid
+from datetime import date
+from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import Response
@@ -13,7 +15,9 @@ from app.models.patient import Patient
 from app.models.user import User
 from app.routers.medical_center import _get_mc
 from app.services import imaging_service
-from app.services.access_request_service import check_doctor_has_access
+from app.services import emergency_service as emergency
+from app.services.access_request_service import check_doctor_has_access, has_consented_access
+from app.services.patient_identity_service import find_patient
 from app.services.audit_service import log_action
 
 router = APIRouter(tags=["Imaging"])
@@ -62,6 +66,9 @@ def _doctor_imaging_report(patient_id: str, report_id: str, current_user: User, 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Imaging study not found")
     if not check_doctor_has_access(doctor, report.id, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this report")
+    emergency.record_report_opened(
+        doctor, report, db, has_consent=has_consented_access(doctor.id, report.patient_id, db),
+    )
     return report
 
 
@@ -139,25 +146,30 @@ def get_series_slices(
 def mc_upload_imaging(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    patient_email: str = Form(...),
+    patient_email: Optional[str] = Form(None),
+    patient_cnic: Optional[str] = Form(None),
+    patient_dob: Optional[date] = Form(None),
     request: Request = None,
     current_user: User = Depends(require_role(["medical_center"])),
     db: Session = Depends(get_db),
 ):
-    """Upload a study for a patient; it joins their record only after they approve it."""
+    """Upload a study for a patient (by email, or CNIC and date of birth); it joins their
+    record only after they approve it."""
     mc = _get_mc(current_user, db)
-    patient_user = db.query(User).filter(User.email == patient_email, User.role == "patient").first()
-    patient = db.query(Patient).filter(Patient.user_id == patient_user.id).first() if patient_user else None
-    if not patient:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No patient found with that email")
+    patient = find_patient(db, email=patient_email, cnic=patient_cnic, date_of_birth=patient_dob)
     report = imaging_service.create_imaging_upload(file, patient, db, medical_center=mc)
     background_tasks.add_task(imaging_service.process_study_by_id, report.imaging_study.id)
     log_action(
         db, action="mc_imaging_upload", performed_by=current_user.id, entity_type="medical_report",
-        entity_id=report.id, details={"filename": report.original_filename, "patient_email": patient_email},
+        entity_id=report.id,
+        details={"filename": report.original_filename, "found_by": "cnic" if patient_cnic else "email"},
         request=request,
     )
-    return {**_upload_response(report), "patient_email": patient_email}
+    return {
+        **_upload_response(report),
+        "patient_name": patient.user.full_name if patient.user else None,
+        "patient_email": patient_email if not patient_cnic else None,
+    }
 
 
 # ── Doctor ────────────────────────────────────────────────────────────────────

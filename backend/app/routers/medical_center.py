@@ -1,4 +1,6 @@
 import uuid
+from datetime import date
+from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy.orm import Session
@@ -16,6 +18,7 @@ from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.medical_center import UpdateRegistrationRequest
 from app.services import affiliation_service as affiliations
+from app.services.patient_identity_service import find_patient
 from app.services import center_verification_service as center_checks
 from app.services.audit_service import log_action
 from app.services.blockchain_service import log_event as blockchain_log
@@ -29,6 +32,7 @@ ALLOWED_CONTENT_TYPES = {
     "application/pdf",
     "image/jpeg",
     "image/png",
+    "image/tiff",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
     "application/msword",  # .doc
 }
@@ -132,25 +136,23 @@ def remove_doctor(
 def upload_report_for_patient(
     file: UploadFile = File(...),
     report_type: str = Form(...),
-    patient_email: str = Form(...),
+    patient_email: Optional[str] = Form(None),
+    patient_cnic: Optional[str] = Form(None),
+    patient_dob: Optional[date] = Form(None),
     request: Request = None,
     current_user: User = Depends(require_role(["medical_center"])),
     db: Session = Depends(get_db),
 ):
-    """Upload a medical report on behalf of a patient (identified by email)."""
+    """Upload a medical report for a patient, identified by email or by CNIC and date of birth."""
     mc = _get_mc(current_user, db)
-
-    # Resolve patient by email
-    patient_user = db.query(User).filter(User.email == patient_email, User.role == "patient").first()
-    if not patient_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No patient found with that email")
-
-    patient = db.query(Patient).filter(Patient.user_id == patient_user.id).first()
-    if not patient:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found")
+    patient = find_patient(db, email=patient_email, cnic=patient_cnic, date_of_birth=patient_dob)
+    patient_user = patient.user
 
     if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only PDF, JPEG, and PNG files are allowed")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF, JPEG, PNG, TIFF and Word (.doc, .docx) files are allowed",
+        )
 
     file_bytes = file.file.read()
     if len(file_bytes) > MAX_FILE_SIZE:
@@ -217,7 +219,7 @@ def upload_report_for_patient(
         performed_by=current_user.id,
         entity_type="medical_report",
         entity_id=report.id,
-        details={"report_type": report_type, "patient_email": patient_email, "filename": file.filename},
+        details={"report_type": report_type, "found_by": "cnic" if patient_cnic else "email", "filename": file.filename},
         request=request,
     )
 
@@ -225,7 +227,8 @@ def upload_report_for_patient(
         "id": str(report.id),
         "original_filename": report.original_filename,
         "report_type": report.report_type,
-        "patient_email": patient_email,
+        "patient_name": patient_user.full_name,
+        "patient_email": patient_email if not patient_cnic else None,
         "upload_source": report.upload_source,
         "uploaded_at": report.uploaded_at,
     }

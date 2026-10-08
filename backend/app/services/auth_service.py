@@ -11,6 +11,7 @@ from app.models.user import User
 from app.models.patient import Patient
 from app.models.doctor import Doctor
 from app.models.medical_center import MedicalCenter
+from app.services import patient_identity_service as identity
 from app.services.center_verification_service import ADMIN_CENTERS_PAGE, check_licence_expiry
 from app.models.admin import Admin
 from app.schemas.auth import (
@@ -76,6 +77,8 @@ def register_patient(data: PatientRegisterRequest, db: Session) -> User:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
+    identity.check_date_of_birth(data.date_of_birth)
+    identity.check_cnic_available(identity.normalize_cnic(data.cnic), db)
 
     user = User(
         id=uuid.uuid4(),
@@ -96,6 +99,7 @@ def register_patient(data: PatientRegisterRequest, db: Session) -> User:
         emergency_contact_name=data.emergency_contact_name,
         emergency_contact_phone=data.emergency_contact_phone
     )
+    identity.set_cnic(patient, data.cnic, db)
     db.add(patient)
     db.commit()
     db.refresh(user)

@@ -11,7 +11,9 @@ class PatientRegisterRequest(BaseModel):
     name: str
     email: EmailStr
     password: str
-    date_of_birth: Optional[date] = None
+    # CNIC, B-Form (children) or NICOP (overseas Pakistanis): 13 digits
+    cnic: str
+    date_of_birth: date
     blood_group: Optional[str] = None
     gender: Optional[str] = None
     emergency_contact_name: Optional[str] = None
