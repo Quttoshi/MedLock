@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Users, BadgeCheck, FileText, Clock, ChevronRight, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getMCDoctors, getMCReports } from "../../api/medicalCenter";
-import { useNavigate } from "react-router-dom";
 
 function MCDashboardHome() {
   const { token, user } = useAuth();
-  const navigate = useNavigate();
   const [stats, setStats] = useState({
-    totalDoctors: "—",
-    verifiedDoctors: "—",
-    totalReports: "—",
-    pendingReports: "—",
+    totalDoctors: "-",
+    verifiedDoctors: "-",
+    totalReports: "-",
+    pendingReports: "-",
   });
 
   useEffect(() => {
@@ -30,133 +30,67 @@ function MCDashboardHome() {
   }, [token]);
 
   const statCards = [
-    {
-      label: "Total Doctors",
-      value: stats.totalDoctors,
-      color: "bg-purple-50 text-purple-700",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-    },
-    {
-      label: "Verified Doctors",
-      value: stats.verifiedDoctors,
-      color: "bg-purple-50 text-purple-700",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
-    {
-      label: "Reports Uploaded",
-      value: stats.totalReports,
-      color: "bg-purple-50 text-purple-700",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-    },
-    {
-      label: "Awaiting Patient Approval",
-      value: stats.pendingReports,
-      color: "bg-yellow-50 text-yellow-600",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
+    { label: "Doctors", value: stats.totalDoctors, Icon: Users, tone: "bg-brand-subtle text-brand" },
+    { label: "Verified doctors", value: stats.verifiedDoctors, Icon: BadgeCheck, tone: "bg-ok-subtle text-ok-ink" },
+    { label: "Reports uploaded", value: stats.totalReports, Icon: FileText, tone: "bg-brand-subtle text-brand" },
+    { label: "Awaiting patient approval", value: stats.pendingReports, Icon: Clock, tone: "bg-warn-subtle text-warn-ink" },
   ];
 
   const quickActions = [
-    {
-      label: "Upload Report",
-      description: "Upload a diagnostic report for a patient",
-      path: "/mc/upload",
-      color: "bg-purple-700 hover:bg-purple-800",
-    },
-    {
-      label: "My Reports",
-      description: "View all reports uploaded by your center",
-      path: "/mc/reports",
-      color: "bg-purple-700 hover:bg-purple-800",
-    },
-    {
-      label: "My Doctors",
-      description: "View doctors registered under your center",
-      path: "/mc/doctors",
-      color: "bg-purple-700 hover:bg-purple-800",
-    },
+    { label: "Upload report", description: "Upload a diagnostic report for a patient", path: "/mc/upload" },
+    { label: "My reports", description: "View all reports uploaded by your center", path: "/mc/reports" },
+    { label: "My doctors", description: "Doctors affiliated with your center", path: "/mc/doctors" },
   ];
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Welcome, {user?.name}
-        </h1>
-        <p className="text-gray-500 mt-1 text-sm">
-          Here is an overview of your Medical Center account.
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl">
+      <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+        Welcome, <em>{user?.name}</em>
+      </h1>
+      <p className="mt-3 text-sm text-muted">An overview of your medical center account.</p>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        {statCards.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4"
-          >
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color}`}>
-              {stat.icon}
+      <dl className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {statCards.map((stat) => {
+          const StatIcon = stat.Icon;
+          return (
+            <div key={stat.label} className="card flex items-center gap-4 p-5">
+              <span className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${stat.tone}`}>
+                <StatIcon aria-hidden="true" size={22} />
+              </span>
+              <div>
+                <dd className="display text-[28px] leading-none text-ink">{stat.value}</dd>
+                <dt className="mt-1 text-sm text-muted">{stat.label}</dt>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+          );
+        })}
+      </dl>
 
-      {/* Quick Actions */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {quickActions.map((action) => (
-            <button
-              key={action.path}
-              onClick={() => navigate(action.path)}
-              className={`${action.color} text-white rounded-2xl p-5 text-left transition shadow-sm`}
+      <h2 className="eyebrow mb-3 mt-10">Quick actions</h2>
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {quickActions.map((a) => (
+          <li key={a.path}>
+            <Link
+              to={a.path}
+              className="card flex h-full items-start justify-between gap-3 p-5 transition-colors hover:border-line-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             >
-              <p className="font-semibold text-base">{action.label}</p>
-              <p className="text-sm opacity-80 mt-1">{action.description}</p>
-            </button>
-          ))}
-        </div>
-      </div>
+              <span>
+                <span className="block text-base font-bold text-ink">{a.label}</span>
+                <span className="mt-1 block text-sm leading-5 text-muted">{a.description}</span>
+              </span>
+              <ChevronRight aria-hidden="true" size={18} className="mt-1 flex-shrink-0 text-muted" />
+            </Link>
+          </li>
+        ))}
+      </ul>
 
-      {/* Notice */}
-      <div className="bg-purple-50 border border-purple-100 rounded-2xl p-5 flex gap-4 items-start">
-        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-          <svg className="w-5 h-5 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
+      <div className="panel-deep mt-10 flex gap-4 p-6">
+        <ShieldCheck aria-hidden="true" size={24} className="mt-0.5 flex-shrink-0 text-deep-on-muted" />
         <div>
-          <p className="text-sm font-semibold text-purple-800">Patient consent required</p>
-          <p className="text-sm text-purple-700 mt-0.5">
-            All reports uploaded by your center require explicit patient approval
-            before they are added to the patient's medical record. Every upload
-            is encrypted with AES-256 and logged on the Ethereum blockchain.
+          <p className="text-base font-bold">Patient consent required</p>
+          <p className="mt-1 text-sm leading-6 text-deep-on-soft">
+            Reports uploaded by your center only join the patient's record after the patient approves them. Every
+            file is encrypted with AES 256 before storage, and its fingerprint is recorded on the Ethereum Sepolia testnet.
           </p>
         </div>
       </div>
@@ -165,5 +99,3 @@ function MCDashboardHome() {
 }
 
 export default MCDashboardHome;
-
-

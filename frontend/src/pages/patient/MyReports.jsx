@@ -1,32 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { FileText, Plus, Search, Clock, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
-
-// ── Status Badge ─────────────────────────────────────
-function VerificationBadge({ status }) {
-  const styles = {
-    verified: "bg-blue-100 text-blue-700",
-    tampered: "bg-red-100 text-red-700",
-    pending: "bg-yellow-100 text-yellow-700",
-  };
-  const labels = {
-    verified: "✓ Verified",
-    tampered: "✗ Tampered",
-    pending: "⏳ Pending",
-  };
-  return (
-    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full 
-                      ${styles[status] || styles.pending}`}>
-      {labels[status] || "⏳ Pending"}
-    </span>
-  );
-}
-
+import { sourceLabel } from "../../adapters/patientStory";
 
 function MyReports() {
   const { token } = useAuth();
-  const navigate = useNavigate();
 
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -99,225 +79,151 @@ function MyReports() {
     });
   };
 
-  // ── Truncate Hash ────────────────────────────────────
-  const truncateHash = (hash) => {
-    if (!hash) return "";
-    return hash.slice(0, 10) + "..." + hash.slice(-8);
-  };
-
   // ── Render ───────────────────────────────────────────
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="mx-auto max-w-4xl">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">My Reports</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+            Your <em>records</em>
+          </h1>
+          <p className="mt-2 text-sm text-muted">
             {approvedReports.length} report{approvedReports.length !== 1 ? "s" : ""} in your record
-            {pendingReports.length > 0 && (
-              <span className="ml-2 bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-                {pendingReports.length} awaiting approval
-              </span>
-            )}
           </p>
         </div>
-        <button
-          onClick={() => navigate("/patient/upload")}
-          className="bg-blue-700 hover:bg-blue-800 text-white text-sm 
-                     font-semibold px-4 py-2.5 rounded-xl transition 
-                     flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor"
-            viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round"
-              strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Upload New
-        </button>
+        <Link to="/patient/upload" className="btn btn-primary">
+          <Plus aria-hidden="true" size={18} />
+          Upload a record
+        </Link>
       </div>
 
-      {/* Pending Approval Section */}
+      {/* Pending approval */}
       {!loading && pendingReports.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-sm font-semibold text-yellow-700 mb-3 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Reports Awaiting Your Approval
+        <section className="mt-8" aria-labelledby="pending-heading">
+          <h2 id="pending-heading" className="eyebrow mb-3 flex items-center gap-2">
+            <Clock aria-hidden="true" size={14} />
+            Waiting for your approval
           </h2>
-          <div className="space-y-3">
+          <ul className="space-y-3">
             {pendingReports.map((report) => (
-              <div key={report.id} className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1 min-w-0">
-                    <div className="w-11 h-11 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">
-                        {report.original_filename}
+              <li key={report.id} className="card border-warn/40 bg-warn-subtle/40 p-5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex min-w-0 flex-1 items-start gap-4">
+                    <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-warn-subtle text-warn-ink">
+                      <FileText aria-hidden="true" size={20} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="break-words text-[16px] font-bold text-ink">{report.original_filename}</p>
+                      <p className="mt-0.5 text-sm text-muted">
+                        {report.report_type} · {sourceLabel(report.upload_source)}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {report.report_type} · Uploaded by Medical Center
-                      </p>
-                      <p className="text-xs text-yellow-700 mt-1">
+                      <p className="mt-1 text-sm text-warn-ink">
                         Review this report before it is added to your medical record.
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex flex-shrink-0 gap-2">
                     <button
+                      type="button"
                       onClick={() => handleReject(report.id)}
                       disabled={!!actionLoading}
-                      className="px-3 py-1.5 text-xs rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                      className="btn btn-sm border-bad bg-transparent text-bad-ink hover:bg-bad-subtle"
                     >
                       {actionLoading === report.id + "_reject" ? "..." : "Reject"}
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleApprove(report.id)}
                       disabled={!!actionLoading}
-                      className="px-3 py-1.5 text-xs rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition disabled:opacity-50"
+                      className="btn btn-sm btn-primary"
                     >
                       {actionLoading === report.id + "_approve" ? "..." : "Approve"}
                     </button>
                   </div>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
 
-      {/* Search + Filter */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <svg className="w-4 h-4 absolute left-3 top-3 text-gray-400"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+      {/* Search + filter */}
+      <div className="mt-8 space-y-4">
+        <div className="relative">
+          <Search aria-hidden="true" size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
           <input
-            type="text"
-            placeholder="Search reports..."
+            type="search"
+            aria-label="Search reports"
+            placeholder="Search reports"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 
-                       rounded-xl text-sm focus:outline-none 
-                       focus:ring-2 focus:ring-blue-500 bg-white"
+            className="field !pl-10"
           />
         </div>
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className="px-4 py-2.5 border border-gray-200 rounded-xl 
-                     text-sm focus:outline-none focus:ring-2 
-                     focus:ring-blue-500 bg-white"
-        >
-          {reportTypes.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
+        {reportTypes.length > 1 && (
+          <div role="group" aria-label="Filter by record type" className="inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1">
+            {reportTypes.map((t) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={filterType === t}
+                onClick={() => setFilterType(t)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                  filterType === t ? "bg-deep text-deep-on" : "text-ink-soft hover:bg-inset hover:text-ink"
+                }`}
+              >
+                {t === "All" ? "Everything" : t}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="flex items-center justify-center h-48">
-          <svg className="animate-spin h-8 w-8 text-blue-500"
-            xmlns="http://www.w3.org/2000/svg" fill="none"
-            viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10"
-              stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8v8z" />
-          </svg>
-        </div>
-      )}
+      {loading && <p className="mt-10 text-center text-muted">Loading your records...</p>}
 
-      {/* Empty State */}
       {!loading && filtered.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 
-                        p-12 text-center shadow-sm">
-          <svg className="w-12 h-12 text-gray-200 mx-auto mb-4"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 
-                 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 
-                 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p className="text-gray-400 font-medium">No reports found</p>
-          <p className="text-gray-300 text-sm mt-1">
-            {searchQuery
-              ? "Try a different search term"
-              : "Upload your first report to get started"}
+        <div className="card card-pad mt-8 text-center">
+          <FileText aria-hidden="true" size={28} className="mx-auto text-muted" />
+          <p className="display mt-3 text-xl text-ink">No records found</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">
+            {searchQuery ? "Try a different search term." : "Upload your first report to get started."}
           </p>
         </div>
       )}
 
-      {/* Reports List */}
       {!loading && filtered.length > 0 && (
-        <div className="space-y-3">
+        <ul className="mt-6 space-y-3">
           {filtered.map((report) => (
-            <div
-              key={report.id}
-              onClick={() => navigate(`/patient/reports/${report.id}`)}
-              className="bg-white rounded-2xl border border-gray-100 p-5 
-                         shadow-sm hover:shadow-md hover:border-blue-100 
-                         cursor-pointer transition-all"
-            >
-              <div className="flex items-start justify-between gap-4">
-
-                {/* File Icon + Info */}
-                <div className="flex items-start gap-4 flex-1 min-w-0">
-                  <div className="w-11 h-11 bg-blue-50 rounded-xl flex 
-                                  items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-blue-500" fill="none"
-                      stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 
-                           00-.293-.707l-5.414-5.414A1 1 0 
-                           0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 
-                                  truncate">
-                      {report.original_filename || report.name}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {report.report_type} · {formatDate(report.uploaded_at || report.upload_date)}
-                    </p>
-
-                    <p className="text-xs font-mono text-gray-300 mt-1.5">
-                      SHA-256: {report.file_hash_sha256?.slice(0, 16)}…
-                    </p>
-                  </div>
-                </div>
-
-                {/* Arrow */}
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <svg className="w-4 h-4 text-gray-300" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+            <li key={report.id}>
+              <Link
+                to={`/patient/reports/${report.id}`}
+                className="card flex items-center gap-4 p-5 transition-colors hover:border-line-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-brand-subtle text-brand">
+                  <FileText aria-hidden="true" size={20} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block break-words text-[16px] font-bold leading-snug text-ink">
+                    {report.original_filename || report.name}
+                  </span>
+                  <span className="mt-0.5 block text-sm text-muted">
+                    {formatDate(report.uploaded_at || report.upload_date)} · {sourceLabel(report.upload_source)}
+                  </span>
+                  <span className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="pill pill-plain">{report.report_type}</span>
+                    <span className="hash">SHA-256 {report.file_hash_sha256?.slice(0, 16)}...</span>
+                  </span>
+                </span>
+                <ChevronRight aria-hidden="true" size={18} className="flex-shrink-0 text-muted" />
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
 }
 
 export default MyReports;
-
-

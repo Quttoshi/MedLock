@@ -1,4 +1,6 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import LandingPage from "./pages/landing/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
@@ -42,6 +44,12 @@ import MCNotifications from "./pages/mc/Notifications";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 
+// Dev only: component gallery. import.meta.env.DEV is false in a production
+// build, so this page and its code are left out of what ships.
+const ComponentGallery = import.meta.env.DEV
+  ? lazy(() => import("./dev/ComponentGallery"))
+  : null;
+
 function ComingSoon({ role }) {
   const { logout } = useAuth();
   return (
@@ -69,11 +77,23 @@ function App() {
   return (
     <Routes>
       {/* Public */}
-      <Route path="/" element={<Navigate to="/login" />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RoleSelectPage />} />
       <Route path="/register/:role" element={<RegisterPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+      {/* Dev only: component gallery, not present in a production build */}
+      {ComponentGallery && (
+        <Route
+          path="/dev/components"
+          element={
+            <Suspense fallback={null}>
+              <ComponentGallery />
+            </Suspense>
+          }
+        />
+      )}
 
       {/* Patient */}
       <Route

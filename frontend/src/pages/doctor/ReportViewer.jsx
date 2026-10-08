@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft, Download, ShieldCheck, FileText } from "lucide-react";
+import { sourceLabel } from "../../adapters/patientStory";
 import { useAuth } from "../../context/AuthContext";
 import {
   downloadReport,
@@ -16,7 +18,6 @@ import IntegrityCheck from "../../components/IntegrityCheck";
 function ReportViewer() {
   const { token } = useAuth();
   const { patientId, reportId } = useParams();
-  const navigate = useNavigate();
 
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -124,227 +125,125 @@ function ReportViewer() {
 
   // ── Loading ───────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <svg className="animate-spin h-8 w-8 text-green-500"
-          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10"
-            stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-        </svg>
-      </div>
-    );
+    return <p className="py-24 text-center text-muted">Loading...</p>;
   }
 
   // ── Not found ─────────────────────────────────────────
   if (!report) {
     return (
-      <div className="max-w-4xl mx-auto text-center py-24">
-        <p className="text-gray-400 font-medium text-lg">Report not found.</p>
-        <button
-          onClick={() => navigate(`/doctor/patients/${patientId}/reports`)}
-          className="mt-4 text-green-700 hover:underline text-sm"
-        >
-          Back to Reports
-        </button>
+      <div className="mx-auto max-w-4xl py-24 text-center">
+        <p className="display text-xl text-ink">Report not found</p>
+        <Link to={`/doctor/patients/${patientId}/reports`} className="link mt-4 inline-block text-sm">
+          Back to records
+        </Link>
       </div>
     );
   }
 
+  const typeLabel = report.report_type?.replace(/_/g, " ") || "Report";
+
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl space-y-5">
 
-      {/* Back Button */}
-      <button
-        onClick={() => navigate(`/doctor/patients/${patientId}/reports`)}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6 transition"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to Reports
-      </button>
+      <Link to={`/doctor/patients/${patientId}/reports`} className="link inline-flex items-center gap-2 text-sm no-underline hover:underline">
+        <ArrowLeft aria-hidden="true" size={16} />
+        Back to records
+      </Link>
 
-      {/* Header Card */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">
-              {report.original_filename || "Medical Report"}
+      {/* Header */}
+      <section className="card card-pad">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="min-w-0">
+            <p className="eyebrow">{typeLabel}</p>
+            <h1 className="display mt-2 break-words text-[26px] leading-tight text-ink sm:text-[30px]">
+              {report.original_filename || "Medical report"}
             </h1>
-            <p className="text-sm text-gray-500 mt-1 capitalize">
-              {report.report_type?.replace(/_/g, " ") || "Report"} · Uploaded {formatDate(report.created_at)}
+            <p className="mt-2 text-sm text-muted">
+              Uploaded {formatDate(report.uploaded_at || report.created_at)}
             </p>
-            <p className="text-xs text-gray-400 mt-1 capitalize">
-              Source: {report.upload_source?.replace("_", " ") || "—"}
-            </p>
+            <p className="text-sm text-muted">{sourceLabel(report.upload_source)}</p>
           </div>
-
-          {/* Download Button */}
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-green-700 text-white text-sm font-medium rounded-xl hover:bg-green-800 transition disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            {downloading ? "Downloading..." : "Download Report"}
+          <button type="button" onClick={handleDownload} disabled={downloading} className="btn btn-secondary btn-sm">
+            <Download aria-hidden="true" size={16} />
+            {downloading ? "Downloading..." : "Download report"}
           </button>
         </div>
 
-        {/* Report Metadata */}
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
-              Report Type
-            </p>
-            <p className="text-sm font-medium text-gray-700 capitalize">
-              {report.report_type?.replace(/_/g, " ") || "—"}
-            </p>
-          </div>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
-              Upload Source
-            </p>
-            <p className="text-sm font-medium text-gray-700 capitalize">
-              {report.upload_source?.replace("_", " ") || "—"}
-            </p>
-          </div>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
-              SHA-256 Hash
-            </p>
-            <p className="text-xs font-mono text-gray-600 break-all">
-              {report.file_hash_sha256
-                ? `${report.file_hash_sha256.slice(0, 20)}...`
-                : "—"}
-            </p>
-          </div>
+        <div className="card-inset mt-5 p-4">
+          <p className="eyebrow mb-1.5">SHA 256 fingerprint</p>
+          <p className="hash !text-ink-soft">
+            {report.file_hash_sha256 ? `${report.file_hash_sha256.slice(0, 20)}...` : "-"}
+          </p>
         </div>
-      </div>
+      </section>
 
-      {/* Integrity Card */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
-        <h2 className="text-base font-semibold text-gray-700 mb-1">File Integrity</h2>
-        <p className="text-xs text-gray-500">
-          Confirms the stored file matches the hash recorded on the blockchain when it was uploaded.
+      {/* Integrity */}
+      <section className="card card-pad">
+        <h2 className="display flex items-center gap-2.5 text-xl text-ink">
+          <ShieldCheck aria-hidden="true" size={24} className="text-brand" />
+          File integrity
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Confirms the stored file matches the fingerprint recorded on Ethereum Sepolia testnet when it was uploaded.
         </p>
         <IntegrityCheck verify={() => verifyReport(token, patientId, reportId)} />
-      </div>
+      </section>
 
       {report.report_type === "imaging" ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-base font-semibold text-gray-700 mb-4">Imaging Study</h2>
+        <section className="card card-pad">
+          <h2 className="display mb-4 text-xl text-ink">Imaging study</h2>
           <ImagingStudyView
             fetchStudy={fetchImagingStudy}
             fetchPreview={fetchImagingPreview}
             fetchSlices={fetchImagingSlices}
           />
-        </div>
+        </section>
       ) : (
-      /* Preview Card */
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h2 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-          Report Preview
-        </h2>
+        <section className="card card-pad">
+          <h2 className="display mb-4 text-xl text-ink">Report preview</h2>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">
-            {error}
-          </div>
-        )}
+          {error && <div role="alert" className="mb-4 rounded-xl bg-bad-subtle p-3.5 text-sm font-semibold text-bad-ink">{error}</div>}
 
-        {/* Preview Loading */}
-        {previewLoading && (
-          <div className="flex items-center justify-center h-64 bg-gray-50 rounded-xl">
-            <div className="text-center">
-              <svg className="animate-spin h-8 w-8 text-green-500 mx-auto mb-2"
-                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10"
-                  stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
-              <p className="text-sm text-gray-400">Loading preview...</p>
+          {previewLoading && (
+            <div className="card-inset flex h-64 items-center justify-center text-sm text-muted">Loading preview...</div>
+          )}
+
+          {!previewLoading && previewType === "pdf" && previewUrl && (
+            <div className="overflow-hidden rounded-2xl border border-line">
+              <iframe src={previewUrl} title="Report preview" className="w-full" style={{ height: "700px" }} />
             </div>
-          </div>
-        )}
+          )}
 
-        {/* PDF Preview */}
-        {!previewLoading && previewType === "pdf" && previewUrl && (
-          <div className="rounded-xl overflow-hidden border border-gray-100">
-            <iframe
-              src={previewUrl}
-              title="Report Preview"
-              className="w-full"
-              style={{ height: "700px" }}
-            />
-          </div>
-        )}
-
-        {/* Image Preview */}
-        {!previewLoading && previewType === "image" && previewUrl && (
-          <div className="flex items-center justify-center bg-gray-50 rounded-xl p-4">
-            <img
-              src={previewUrl}
-              alt="Report"
-              className="max-w-full max-h-[700px] rounded-xl shadow-sm object-contain"
-            />
-          </div>
-        )}
-
-        {/* Unknown / Unsupported */}
-        {!previewLoading && previewType === "unknown" && (
-          <div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-xl">
-            <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mb-3">
-              <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+          {!previewLoading && previewType === "image" && previewUrl && (
+            <div className="card-inset flex items-center justify-center p-4">
+              <img src={previewUrl} alt="Report" className="max-h-[700px] max-w-full rounded-xl object-contain" />
             </div>
-            <p className="text-gray-500 text-sm font-medium">Preview not available</p>
-            <p className="text-gray-400 text-xs mt-1 mb-4">
-              This file type cannot be previewed in the browser.
-            </p>
-            <button
-              onClick={handleDownload}
-              disabled={downloading}
-              className="px-4 py-2 bg-green-700 text-white text-sm rounded-xl hover:bg-green-800 transition disabled:opacity-50"
-            >
-              {downloading ? "Downloading..." : "Download to View"}
-            </button>
-          </div>
-        )}
-      </div>
+          )}
+
+          {!previewLoading && previewType === "unknown" && (
+            <div className="card-inset flex h-64 flex-col items-center justify-center px-4 text-center">
+              <FileText aria-hidden="true" size={28} className="text-muted" />
+              <p className="mt-2 text-sm font-bold text-ink">Preview not available</p>
+              <p className="mb-4 mt-1 text-sm text-muted">This file type cannot be previewed in the browser.</p>
+              <button type="button" onClick={handleDownload} disabled={downloading} className="btn btn-primary btn-sm">
+                {downloading ? "Downloading..." : "Download to view"}
+              </button>
+            </div>
+          )}
+        </section>
       )}
 
-      {/* Security Notice */}
-      <div className="mt-4 bg-green-50 border border-green-100 rounded-2xl p-4 flex gap-3 items-start">
-        <svg className="w-5 h-5 text-green-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
+      <div className="panel-deep flex gap-4 p-5">
+        <ShieldCheck aria-hidden="true" size={22} className="mt-0.5 flex-shrink-0 text-deep-on-muted" />
         <div>
-          <p className="text-sm font-semibold text-green-800">Encrypted Access</p>
-          <p className="text-xs text-green-700 mt-0.5">
-            This report was decrypted on-the-fly using the patient's encryption key.
-            Your access to this record is logged on the Ethereum blockchain and
-            can be revoked by the patient at any time.
+          <p className="text-sm font-bold">Encrypted access</p>
+          <p className="mt-1 text-sm leading-5 text-deep-on-soft">
+            This report is stored encrypted with AES 256 and decrypted only to show it to you. Your access is logged, and the patient can take it back at any time.
           </p>
         </div>
       </div>
-
     </div>
   );
 }
 
 export default ReportViewer;
-

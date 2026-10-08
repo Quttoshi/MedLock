@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getAdminMedicalCenters, approveMC, rejectMC } from "../../api/admin";
+import FilterChips from "../../components/ui/FilterChips";
+import StatusPill from "../../components/ui/StatusPill";
+
+const MC_FILTERS = ["all", "pending", "approved", "rejected"].map((f) => ({ value: f, label: f }));
 
 function MedicalCenters() {
   const { token } = useAuth();
@@ -49,77 +53,58 @@ function MedicalCenters() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Medical Centers</h1>
-        <p className="text-gray-500 text-sm mt-1">Approve or reject Medical Center registrations.</p>
+    <div className="mx-auto max-w-6xl">
+      <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+        Medical <em>centers</em>
+      </h1>
+      <p className="mt-3 text-sm text-muted">Approve or reject medical center registrations.</p>
+
+      <div className="mt-8">
+        <FilterChips label="Filter by status" options={MC_FILTERS} value={filter} onChange={setFilter} />
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-6">
-        {["all", "pending", "approved", "rejected"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition
-              ${filter === f
-                ? "bg-gray-500 text-white shadow-sm"
-                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-              }`}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="p-10 text-center text-gray-400 text-sm">Loading...</div>
-        ) : mcs.length === 0 ? (
-          <div className="p-10 text-center text-gray-400 text-sm">No medical centers found.</div>
-        ) : (
+      {loading ? (
+        <p className="mt-10 text-center text-muted">Loading...</p>
+      ) : mcs.length === 0 ? (
+        <div className="card card-pad mt-6 text-center text-sm text-muted">No medical centers found.</div>
+      ) : (
+        <div className="card mt-6 overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <caption className="sr-only">Medical center registrations</caption>
+            <thead className="!bg-inset">
               <tr>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Name</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Email</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">License</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Status</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Actions</th>
+                {["Name", "Email", "License", "Status", "Actions"].map((h) => (
+                  <th key={h} scope="col" className="px-5 py-3 text-left text-[13px] font-bold !text-muted">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-line">
               {mcs.map((mc) => (
-                <tr key={mc.id} className="hover:bg-gray-50 transition">
-                  <td className="px-5 py-4 font-medium text-gray-800">{mc.name}</td>
-                  <td className="px-5 py-4 text-gray-500">{mc.email}</td>
-                  <td className="px-5 py-4 text-gray-500">{mc.license_number || "—"}</td>
+                <tr key={mc.id}>
+                  <td className="px-5 py-4 font-bold text-ink">{mc.name}</td>
+                  <td className="px-5 py-4 text-ink-soft">{mc.email}</td>
+                  <td className="px-5 py-4 font-mono text-[13px] text-ink-soft">{mc.license_number || "-"}</td>
                   <td className="px-5 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
-                      ${mc.is_approved
-                        ? "bg-green-100 text-green-700"
-                        : mc.rejection_reason
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                      }`}>
+                    <StatusPill tone={mc.is_approved ? "ok" : mc.rejection_reason ? "bad" : "warn"}>
                       {mc.is_approved ? "Approved" : mc.rejection_reason ? "Rejected" : "Pending"}
-                    </span>
+                    </StatusPill>
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex gap-2">
                       {!mc.is_approved && (
                         <button
+                          type="button"
                           onClick={() => handleApprove(mc.id)}
                           disabled={actionLoading === mc.id + "_approve"}
-                          className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+                          className="btn btn-primary btn-sm"
                         >
                           {actionLoading === mc.id + "_approve" ? "..." : "Approve"}
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={() => setRejectModal({ open: true, id: mc.id })}
-                        className="px-3 py-1.5 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                        className="btn btn-secondary btn-sm"
                       >
                         Reject
                       </button>
@@ -129,35 +114,38 @@ function MedicalCenters() {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Reject Modal */}
+      {/* Reject dialog */}
       {rejectModal.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Reject Medical Center</h3>
-            <p className="text-sm text-gray-500 mb-4">Please provide a reason for rejection.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="reject-title" className="card card-lift w-full max-w-md p-6">
+            <h2 id="reject-title" className="display text-xl text-ink">Reject medical center</h2>
+            <p className="mt-1 text-sm text-muted">Please provide a reason for the rejection.</p>
+            <label htmlFor="reject-reason" className="field-label mt-4">Reason</label>
             <textarea
+              id="reject-reason"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               rows={3}
-              placeholder="Enter rejection reason..."
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
+              className="field resize-none"
             />
-            <div className="flex gap-3 mt-4">
+            <div className="mt-5 flex gap-3">
               <button
+                type="button"
                 onClick={() => { setRejectModal({ open: false, id: null }); setRejectReason(""); }}
-                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition"
+                className="btn btn-secondary flex-1"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleReject}
                 disabled={!rejectReason.trim() || actionLoading}
-                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition disabled:opacity-50"
+                className="btn btn-danger flex-1"
               >
-                {actionLoading ? "Rejecting..." : "Confirm Reject"}
+                {actionLoading ? "Rejecting..." : "Confirm reject"}
               </button>
             </div>
           </div>
@@ -168,5 +156,3 @@ function MedicalCenters() {
 }
 
 export default MedicalCenters;
-
-

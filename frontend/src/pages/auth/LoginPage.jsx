@@ -3,6 +3,8 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import PasswordInput from "../../components/PasswordInput";
+import AuthShell from "../../components/shell/AuthShell";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -108,36 +110,25 @@ function LoginPage() {
 
   // ── Render ───────────────────────────────────────────
   return (
-    <div className="auth-shell min-h-screen 
-                    flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 border border-white/70">
+    <AuthShell>
+      <h1 className="display text-[40px] leading-tight text-ink">Welcome back</h1>
+      <p className="mt-2 text-sm text-muted">Sign in to your MedLock account.</p>
 
-        {/* Logo + Title */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 
-                          bg-gradient-to-br from-blue-600 to-teal-500 rounded-2xl mb-4 shadow-lg shadow-blue-100">
-            <span className="text-white text-2xl font-bold">M</span>
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900">MedLock</h1>
-          <p className="text-gray-500 mt-1 text-sm">
-            Sign in to your account
-          </p>
-        </div>
-
-        {/* Registration Success Banner */}
-        {registered && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200
-                          rounded-lg text-green-700 text-sm">
+      {registered && (
+        <div role="status" className="mt-6 flex items-start gap-2.5 rounded-xl bg-ok-subtle p-3.5 text-sm font-semibold text-ok-ink">
+          <CheckCircle2 aria-hidden="true" size={18} className="mt-0.5 flex-shrink-0" />
+          <span>
             {verifyEmail
               ? `Account created. We sent a confirmation link to ${registeredEmail || "your email"}. Click it, then sign in.`
               : "Account created successfully. Please sign in."}
-          </div>
-        )}
+          </span>
+        </div>
+      )}
 
-        {/* Server Error Banner */}
-        {serverError && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 
-                          rounded-lg text-red-600 text-sm">
+      {serverError && (
+        <div role="alert" className="mt-6 flex items-start gap-2.5 rounded-xl bg-bad-subtle p-3.5 text-sm font-semibold text-bad-ink">
+          <AlertCircle aria-hidden="true" size={18} className="mt-0.5 flex-shrink-0" />
+          <div>
             {serverError}
             {needsVerification && (
               <div className="mt-2">
@@ -145,104 +136,61 @@ function LoginPage() {
                   type="button"
                   onClick={handleResend}
                   disabled={resending}
-                  className="text-blue-700 font-medium hover:underline disabled:opacity-50"
+                  className="link disabled:opacity-50"
                 >
                   {resending ? "Sending..." : "Resend confirmation email"}
                 </button>
-                {resendMessage && <p className="mt-1 text-gray-600">{resendMessage}</p>}
+                {resendMessage && <p className="mt-1 font-normal text-ink-soft">{resendMessage}</p>}
               </div>
             )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-5">
+        <div>
+          <label htmlFor="email" className="field-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            autoComplete="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="you@example.com"
+            aria-invalid={errors.email ? "true" : undefined}
+            aria-describedby={errors.email ? "email-error" : undefined}
+            className="field"
+          />
+          {errors.email && <p id="email-error" className="field-error">{errors.email}</p>}
+        </div>
 
-          {/* Email */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="you@example.com"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm 
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 
-                          transition
-                          ${errors.email
-                            ? "border-red-400 bg-red-50"
-                            : "border-gray-300 bg-white"
-                          }`}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-            )}
-          </div>
+        <div>
+          <label htmlFor="password" className="field-label">Password</label>
+          <PasswordInput
+            id="password"
+            name="password"
+            autoComplete="current-password"
+            value={formData.password}
+            onChange={handleChange}
+            aria-invalid={errors.password ? "true" : undefined}
+            aria-describedby={errors.password ? "password-error" : undefined}
+            className="field"
+          />
+          {errors.password && <p id="password-error" className="field-error">{errors.password}</p>}
+        </div>
 
-          {/* Password */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <PasswordInput
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm 
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 
-                          transition
-                          ${errors.password
-                            ? "border-red-400 bg-red-50"
-                            : "border-gray-300 bg-white"
-                          }`}
-            />
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-            )}
-          </div>
+        <button type="submit" disabled={loading} className="btn btn-primary btn-lg w-full">
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
+      </form>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white 
-                       font-semibold py-2.5 rounded-lg transition 
-                       disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg" fill="none"
-                  viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10"
-                    stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
-                Signing in...
-              </span>
-            ) : "Sign In"}
-          </button>
-        </form>
-
-        {/* Register Link */}
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Don't have an account?{" "}
-          <Link to="/register"
-            className="text-blue-600 hover:underline font-medium">
-            Register here
-          </Link>
-        </p>
-      </div>
-    </div>
+      <p className="mt-6 text-center text-sm text-muted">
+        New to MedLock?{" "}
+        <Link to="/register" className="link">Create an account</Link>
+      </p>
+    </AuthShell>
   );
 }
 
 export default LoginPage;
-
-
-

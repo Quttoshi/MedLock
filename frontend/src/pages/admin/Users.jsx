@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getAdminUsers } from "../../api/admin";
+import FilterChips from "../../components/ui/FilterChips";
 
-const roleBadge = {
-  patient: "bg-green-100 text-green-700",
-  doctor: "bg-green-100 text-green-700",
-  medical_center: "bg-green-100 text-green-700",
-  admin: "bg-gray-100 text-gray-700",
+const ROLE_FILTERS = [
+  { label: "All", value: "" },
+  { label: "Patients", value: "patient" },
+  { label: "Doctors", value: "doctor" },
+  { label: "Medical centers", value: "medical_center" },
+  { label: "Admins", value: "admin" },
+];
+
+const roleTone = {
+  patient: "pill-brand",
+  doctor: "pill-ok",
+  medical_center: "pill-warn",
+  admin: "pill-plain",
 };
 
 function Users() {
@@ -24,73 +33,52 @@ function Users() {
   }, [token, filter]);
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Users</h1>
-        <p className="text-gray-500 text-sm mt-1">All registered users on the platform.</p>
+    <div className="mx-auto max-w-6xl">
+      <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+        All <em>users</em>
+      </h1>
+      <p className="mt-3 text-sm text-muted">Every registered account on the platform.</p>
+
+      <div className="mt-8">
+        <FilterChips label="Filter by role" options={ROLE_FILTERS} value={filter} onChange={setFilter} />
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {[
-          { label: "All", value: "" },
-          { label: "Patients", value: "patient" },
-          { label: "Doctors", value: "doctor" },
-          { label: "Medical Centers", value: "medical_center" },
-          { label: "Admins", value: "admin" },
-        ].map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition
-              ${filter === f.value
-                ? "bg-gray-500 text-white shadow-sm"
-                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-              }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="p-10 text-center text-gray-400 text-sm">Loading...</div>
-        ) : users.length === 0 ? (
-          <div className="p-10 text-center text-gray-400 text-sm">No users found.</div>
-        ) : (
+      {loading ? (
+        <p className="mt-10 text-center text-muted">Loading...</p>
+      ) : users.length === 0 ? (
+        <div className="card card-pad mt-6 text-center text-sm text-muted">No users found.</div>
+      ) : (
+        <div className="card mt-6 overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <caption className="sr-only">Registered users</caption>
+            <thead className="!bg-inset">
               <tr>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Name</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Email</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Role</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Joined</th>
+                {["Name", "Email", "Role", "Joined"].map((h) => (
+                  <th key={h} scope="col" className="px-5 py-3 text-left text-[13px] font-bold !text-muted">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-line">
               {users.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50 transition">
-                  <td className="px-5 py-4 font-medium text-gray-800">{u.name}</td>
-                  <td className="px-5 py-4 text-gray-500">{u.email}</td>
+                <tr key={u.id}>
+                  <td className="px-5 py-4 font-bold text-ink">{u.name}</td>
+                  <td className="px-5 py-4 text-ink-soft">{u.email}</td>
                   <td className="px-5 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${roleBadge[u.role] || "bg-gray-100 text-gray-600"}`}>
+                    <span className={`pill capitalize ${roleTone[u.role] || "pill-plain"}`}>
                       {u.role?.replace("_", " ")}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-gray-500">
-                    {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}
+                  <td className="px-5 py-4 text-ink-soft">
+                    {u.created_at ? new Date(u.created_at).toLocaleDateString() : "-"}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default Users;
-
-

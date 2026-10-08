@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { FileText } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getMCReports } from "../../api/medicalCenter";
+import StatusPill from "../../components/ui/StatusPill";
+
+const FILTERS = ["all", "approved", "pending"];
 
 function MCMyReports() {
   const { token } = useAuth();
@@ -22,83 +27,76 @@ function MCMyReports() {
     : reports.filter((r) => !r.is_approved);
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">My Reports</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          All diagnostic reports uploaded by your medical center.
-        </p>
-      </div>
+    <div className="mx-auto max-w-6xl">
+      <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+        Uploaded <em>reports</em>
+      </h1>
+      <p className="mt-3 text-sm text-muted">All diagnostic reports uploaded by your medical center.</p>
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-6">
-        {["all", "approved", "pending"].map((f) => (
+      <div role="group" aria-label="Filter reports" className="mt-8 inline-flex gap-1 rounded-full bg-inset p-1">
+        {FILTERS.map((f) => (
           <button
             key={f}
+            type="button"
             onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition
-              ${filter === f
-                ? "bg-purple-700 text-white shadow-sm"
-                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-              }`}
+            aria-pressed={filter === f}
+            className={`rounded-full px-4 py-2 text-sm font-bold capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+              filter === f ? "bg-deep text-deep-on" : "text-muted hover:text-ink"
+            }`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {f}
           </button>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="p-10 text-center text-gray-400 text-sm">Loading...</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-gray-400 text-sm">No reports found.</div>
-        ) : (
+      {loading ? (
+        <p className="mt-10 text-center text-muted">Loading...</p>
+      ) : filtered.length === 0 ? (
+        <div className="card card-pad mt-6 text-center">
+          <FileText aria-hidden="true" size={28} className="mx-auto text-muted" />
+          <p className="display mt-3 text-xl text-ink">No reports found</p>
+          {reports.length === 0 && (
+            <>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">
+                Reports you upload for patients will appear here.
+              </p>
+              <Link to="/mc/upload" className="btn btn-primary mt-5">Upload a report</Link>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="card mt-6 overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <caption className="sr-only">Reports uploaded by your medical center</caption>
+            <thead className="!bg-inset">
               <tr>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">File Name</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Report Type</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Patient</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Uploaded</th>
-                <th className="text-left px-5 py-3 text-gray-500 font-medium">Status</th>
+                {["File name", "Report type", "Patient", "Uploaded", "Status"].map((h) => (
+                  <th key={h} scope="col" className="px-5 py-3 text-left text-[13px] font-bold !text-muted">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-line">
               {filtered.map((report) => (
-                <tr key={report.id} className="hover:bg-gray-50 transition">
-                  <td className="px-5 py-4 font-medium text-gray-800">
-                    {report.original_filename || "Report"}
-                  </td>
-                  <td className="px-5 py-4 text-gray-500 capitalize">
-                    {report.report_type?.replace(/_/g, " ") || "—"}
-                  </td>
-                  <td className="px-5 py-4 text-gray-500">
-                    {report.patient_name || report.patient_email || "—"}
-                  </td>
-                  <td className="px-5 py-4 text-gray-500">
-                    {report.uploaded_at
-                      ? new Date(report.uploaded_at).toLocaleDateString()
-                      : "—"}
+                <tr key={report.id}>
+                  <td className="px-5 py-4 font-bold text-ink">{report.original_filename || "Report"}</td>
+                  <td className="px-5 py-4 capitalize text-ink-soft">{report.report_type?.replace(/_/g, " ") || "-"}</td>
+                  <td className="px-5 py-4 text-ink-soft">{report.patient_name || report.patient_email || "-"}</td>
+                  <td className="px-5 py-4 text-ink-soft">
+                    {report.uploaded_at ? new Date(report.uploaded_at).toLocaleDateString() : "-"}
                   </td>
                   <td className="px-5 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
-                      ${report.is_approved
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-yellow-100 text-yellow-700"
-                      }`}>
-                      {report.is_approved ? "Approved" : "Pending Approval"}
-                    </span>
+                    <StatusPill tone={report.is_approved ? "ok" : "warn"}>
+                      {report.is_approved ? "Approved" : "Pending approval"}
+                    </StatusPill>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default MCMyReports;
-
-

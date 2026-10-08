@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ShieldCheck, Clock, ShieldAlert } from "lucide-react";
 import { getMyVerification, submitVerificationRequest } from "../api/doctor";
 
 const formatDate = (value) =>
@@ -53,87 +54,98 @@ function DoctorVerificationCard({ token }) {
   const pending = latest?.status === "pending";
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-5">
-      <h2 className="text-base font-semibold text-gray-700 mb-3">License verification</h2>
+    <section className="card card-pad">
+      <h2 className="display text-xl text-ink">License verification</h2>
 
       {info.is_verified ? (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
-          <p className="font-semibold">✓ {info.label}</p>
-          <p className="text-xs mt-1">
+        <div className="mt-4 rounded-2xl bg-ok-subtle p-4 text-ok-ink">
+          <p className="flex items-center gap-2 text-sm font-bold">
+            <ShieldCheck aria-hidden="true" size={18} />
+            {info.label}
+          </p>
+          <p className="mt-1.5 text-sm">
             PMDC no. <span className="font-mono">{info.license_number}</span>
             {info.verified_at && ` · verified ${formatDate(info.verified_at)}`}
             {info.license_expires_at && ` · licence valid until ${formatDate(info.license_expires_at)}`}
           </p>
-          <p className="text-xs mt-1 text-green-700">
-            Patients see this when you request access to their records.
-          </p>
+          <p className="mt-1.5 text-sm">Patients see this when you request access to their records.</p>
         </div>
       ) : pending ? (
-        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-800">
-          <p className="font-semibold">Verification request under review</p>
-          <p className="text-xs mt-1">
+        <div className="mt-4 rounded-2xl bg-warn-subtle p-4 text-warn-ink">
+          <p className="flex items-center gap-2 text-sm font-bold">
+            <Clock aria-hidden="true" size={18} />
+            Verification request under review
+          </p>
+          <p className="mt-1.5 text-sm">
             Submitted {formatDate(latest.submitted_at)} for PMDC no.{" "}
             <span className="font-mono">{latest.registration_number}</span>. An administrator will check it on the
-            PMDC register; you'll be notified of the result.
+            PMDC register, and you will be notified of the result.
           </p>
         </div>
       ) : (
         <>
           {latest?.status === "rejected" && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-              <p className="font-semibold">Your last request was not approved</p>
-              <p className="text-xs mt-1">Reason: {latest.admin_note}</p>
+            <div className="mt-4 rounded-2xl bg-bad-subtle p-4 text-bad-ink">
+              <p className="flex items-center gap-2 text-sm font-bold">
+                <ShieldAlert aria-hidden="true" size={18} />
+                Your last request was not approved
+              </p>
+              <p className="mt-1.5 text-sm">Reason: {latest.admin_note}</p>
             </div>
           )}
-          {info.note && !latest && <p className="text-xs text-gray-500 mb-3">{info.note}</p>}
-          <p className="text-sm text-gray-600 mb-4">
+          {info.note && !latest && <p className="mt-3 text-sm text-muted">{info.note}</p>}
+          <p className="mt-4 text-sm leading-6 text-ink-soft">
             You need to be verified to open patient records. If you work at a hospital, request affiliation
             below and they will verify you. If you practise independently, ask MedLock to verify your PMDC
             registration instead.
           </p>
-          <form onSubmit={submit} className="grid sm:grid-cols-2 gap-3">
-            <label className="text-xs text-gray-600">
-              PMDC registration number
+          <form onSubmit={submit} className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="pmdc" className="field-label">PMDC registration number</label>
               <input
+                id="pmdc"
                 type="text"
                 value={registration}
                 onChange={(e) => setRegistration(e.target.value)}
                 required
-                className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono"
+                className="field font-mono"
               />
-            </label>
-            <label className="text-xs text-gray-600">
-              Licence valid until (optional)
+            </div>
+            <div>
+              <label htmlFor="pmdc-expiry" className="field-label">
+                Licence valid until <span className="ml-1.5 font-normal text-muted">(optional)</span>
+              </label>
               <input
+                id="pmdc-expiry"
                 type="date"
                 value={expiry}
                 onChange={(e) => setExpiry(e.target.value)}
-                className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                className="field"
               />
-            </label>
-            <label className="text-xs text-gray-600 sm:col-span-2">
-              PMDC certificate (optional, PDF/JPEG/PNG up to 5 MB, stored encrypted)
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="pmdc-cert" className="field-label">
+                PMDC certificate <span className="ml-1.5 font-normal text-muted">(optional)</span>
+              </label>
               <input
+                id="pmdc-cert"
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) => setCertificate(e.target.files[0] || null)}
-                className="mt-1 block w-full text-sm"
+                className="block w-full text-sm text-ink-soft file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-brand-subtle file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-brand"
               />
-            </label>
-            {error && <p className="text-xs text-red-600 sm:col-span-2">{error}</p>}
+              <p className="field-hint">PDF, JPEG or PNG up to 5 MB. Stored encrypted.</p>
+            </div>
+            {error && <p role="alert" className="text-sm font-semibold text-bad-ink sm:col-span-2">{error}</p>}
             <div className="sm:col-span-2">
-              <button
-                type="submit"
-                disabled={submitting || !registration.trim()}
-                className="px-4 py-2 bg-green-700 text-white text-sm font-medium rounded-xl hover:bg-green-800 transition disabled:opacity-50"
-              >
+              <button type="submit" disabled={submitting || !registration.trim()} className="btn btn-primary">
                 {submitting ? "Submitting..." : "Request verification"}
               </button>
             </div>
           </form>
         </>
       )}
-    </div>
+    </section>
   );
 }
 

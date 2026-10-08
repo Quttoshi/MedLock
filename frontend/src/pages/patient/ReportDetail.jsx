@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft, Download, ShieldCheck, ScanText, ExternalLink } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import IntegrityCheck from "../../components/IntegrityCheck";
 import ImagingStudyView from "../../components/ImagingStudyView";
 import { imagingDownloadName } from "../../utils/imaging";
+import StatusPill from "../../components/ui/StatusPill";
+import { sourceLabel } from "../../adapters/patientStory";
 
 function BlockchainBadge({ logs }) {
   if (!logs || logs.length === 0) return null;
@@ -12,27 +15,14 @@ function BlockchainBadge({ logs }) {
   const confirmed = logs.some((l) => l.status === "confirmed");
   const pending = logs.some((l) => l.status === "pending");
 
-  if (confirmed) return (
-    <span className="text-sm font-semibold px-3 py-1.5 rounded-full border bg-blue-100 text-blue-700 border-blue-200">
-      ✓ Blockchain Verified
-    </span>
-  );
-  if (pending) return (
-    <span className="text-sm font-semibold px-3 py-1.5 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200">
-      ⏳ Blockchain Pending
-    </span>
-  );
-  return (
-    <span className="text-sm font-semibold px-3 py-1.5 rounded-full border bg-gray-100 text-gray-600 border-gray-200">
-      — Not on Chain
-    </span>
-  );
+  if (confirmed) return <StatusPill tone="ok">Recorded on Sepolia testnet</StatusPill>;
+  if (pending) return <StatusPill tone="warn">Recording on blockchain</StatusPill>;
+  return <StatusPill tone="plain">Not on chain yet</StatusPill>;
 }
 
 function ReportDetail() {
   const { id } = useParams();
   const { token } = useAuth();
-  const navigate = useNavigate();
 
   const [report, setReport] = useState(null);
   const [ocrData, setOcrData] = useState(null);
@@ -134,194 +124,141 @@ function ReportDetail() {
   // ── Not found ────────────────────────────────────────
   if (!loading && !report) {
     return (
-      <div className="max-w-4xl mx-auto text-center py-24">
-        <p className="text-gray-400 font-medium text-lg">Report not found.</p>
-        <button onClick={() => navigate("/patient/reports")} className="mt-4 text-blue-700 hover:underline text-sm">
-          Back to Reports
-        </button>
+      <div className="mx-auto max-w-4xl py-24 text-center">
+        <p className="display text-xl text-ink">Report not found</p>
+        <Link to="/patient/reports" className="link mt-4 inline-block text-sm">
+          Back to your records
+        </Link>
       </div>
     );
   }
 
   // ── Loading ───────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <svg className="animate-spin h-8 w-8 text-blue-500"
-          xmlns="http://www.w3.org/2000/svg" fill="none"
-          viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10"
-            stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor"
-            d="M4 12a8 8 0 018-8v8z" />
-        </svg>
-      </div>
-    );
+    return <p className="py-24 text-center text-muted">Loading your record...</p>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto max-w-4xl space-y-5">
 
-      {/* Back Button */}
-      <button
-        onClick={() => navigate("/patient/reports")}
-        className="flex items-center gap-2 text-sm text-gray-500 
-                   hover:text-gray-700 mb-6 transition"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor"
-          viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round"
-            strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to Reports
-      </button>
+      <Link to="/patient/reports" className="link inline-flex items-center gap-2 text-sm no-underline hover:underline">
+        <ArrowLeft aria-hidden="true" size={16} />
+        Back to your records
+      </Link>
 
-      {/* Header Card */}
-      <div className="bg-white rounded-2xl border border-gray-100 
-                      shadow-sm p-6 mb-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">
+      {/* Header */}
+      <section className="card card-pad">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="min-w-0">
+            <p className="eyebrow">{report.report_type}</p>
+            <h1 className="display mt-2 break-words text-[26px] leading-tight text-ink sm:text-[30px]">
               {report.original_filename || report.name}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {report.report_type} · Uploaded {formatDate(report.uploaded_at || report.upload_date)}
+            <p className="mt-2 text-sm text-muted">
+              Uploaded {formatDate(report.uploaded_at || report.upload_date)}
             </p>
-            <p className="text-xs text-gray-400 mt-1 capitalize">
-              Source: {report.upload_source?.replace("_", " ")}
-            </p>
+            <p className="text-sm text-muted">{sourceLabel(report.upload_source)}</p>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-start gap-3 sm:items-end">
             <BlockchainBadge logs={blockchainLogs} />
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-1.5 text-sm text-blue-700 hover:text-blue-800 font-medium transition"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download Original
+            <button type="button" onClick={handleDownload} className="btn btn-secondary btn-sm">
+              <Download aria-hidden="true" size={16} />
+              Download original
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Imaging Study */}
       {report.report_type === "imaging" && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
-          <h2 className="text-base font-semibold text-gray-700 mb-4">Imaging Study</h2>
+        <section className="card card-pad">
+          <h2 className="display mb-4 text-xl text-ink">Imaging study</h2>
           <ImagingStudyView
             fetchStudy={fetchImagingStudy}
             fetchPreview={fetchImagingPreview}
             fetchSlices={fetchImagingSlices}
           />
-        </div>
+        </section>
       )}
 
-      {/* Integrity Info */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
-        <h2 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
-          </svg>
-          File Integrity
+      {/* Integrity */}
+      <section className="card card-pad">
+        <h2 className="display flex items-center gap-2.5 text-xl text-ink">
+          <ShieldCheck aria-hidden="true" size={24} className="text-brand" />
+          File integrity
         </h2>
-        <div className="bg-gray-50 rounded-xl p-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">SHA-256 Hash</p>
-          <p className="text-sm font-mono text-gray-700 break-all">{report.file_hash_sha256}</p>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Your file is encrypted with AES 256 before storage. Its SHA 256 fingerprint is recorded on Ethereum Sepolia testnet, so any change to the file can be detected.
+        </p>
+        <div className="card-inset mt-4 p-4">
+          <p className="eyebrow mb-1.5">SHA 256 fingerprint</p>
+          <p className="hash !text-ink-soft">{report.file_hash_sha256}</p>
         </div>
         {blockchainLogs.length > 0 && (
-          <div className="mt-3 space-y-2">
+          <ul className="mt-3 space-y-2">
             {blockchainLogs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-xl px-4 py-2">
-                <span className="capitalize font-medium">{log.event_type?.replace("_", " ")}</span>
-                <span className={`font-semibold ${log.status === "confirmed" ? "text-blue-700" : "text-yellow-600"}`}>
+              <li key={log.id} className="card-inset flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm">
+                <span className="font-semibold capitalize text-ink">{log.event_type?.replace("_", " ")}</span>
+                <span className={`font-semibold capitalize ${log.status === "confirmed" ? "text-ok-ink" : "text-warn-ink"}`}>
                   {log.status}
                 </span>
                 {log.explorer_url && (
-                  <a
-                    href={log.explorer_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
-                  >
-                    View on Etherscan →
+                  <a href={log.explorer_url} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1">
+                    View on Etherscan
+                    <ExternalLink aria-hidden="true" size={14} />
                   </a>
                 )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
         <IntegrityCheck
           verify={() =>
             api.get(`/reports/${id}/verify`, { headers: { Authorization: `Bearer ${token}` } })
           }
         />
-      </div>
+      </section>
 
       {/* Extracted Report Data */}
       {ocrData && (
-        <div className="bg-white rounded-2xl border border-gray-100
-                        shadow-sm p-6 mb-5">
-          <h2 className="text-base font-semibold text-gray-700 mb-4
-                         flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-500" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0
-                   002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0
-                   002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Extracted Report Data
+        <section className="card card-pad">
+          <h2 className="display flex items-center gap-2.5 text-xl text-ink">
+            <ScanText aria-hidden="true" size={24} className="text-brand" />
+            Extracted text
           </h2>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Read automatically from printed or typed text. Check it against the original file, and ask your doctor what it means.
+          </p>
 
-          {/* Abnormal Evidence Table */}
           {abnormalRows.length > 0 && (
-            <div className="overflow-x-auto rounded-xl border border-gray-100">
+            <div className="mt-4 overflow-x-auto rounded-2xl border border-line">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <caption className="sr-only">Values flagged by the report</caption>
+                <thead className="!bg-inset">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Parameter
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Value
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Report Reference
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Source Evidence
-                    </th>
+                    {["Parameter", "Value", "Report reference", "Source evidence"].map((h) => (
+                      <th key={h} scope="col" className="px-4 py-3 text-left text-[13px] font-bold !text-muted">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-line">
                   {abnormalRows.map((row, i) => (
                     <tr key={i}>
-                      <td className="px-4 py-3 font-medium text-gray-700 capitalize">
-                        {row.test}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-red-600">
+                      <td className="px-4 py-3 font-semibold capitalize text-ink">{row.test}</td>
+                      <td className="px-4 py-3 font-bold text-bad-ink">
                         {row.value} {row.unit}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-ink-soft">
                         <p>{row.normal_range || "-"}</p>
-                        {row.reference_text && (
-                          <p className="mt-1 text-[11px] text-gray-400">
-                            {row.reference_text}
-                          </p>
-                        )}
+                        {row.reference_text && <p className="mt-1 text-xs text-muted">{row.reference_text}</p>}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500">
+                      <td className="px-4 py-3 text-xs text-muted">
                         {row.source_text ? (
                           <details>
-                            <summary className="cursor-pointer font-medium text-gray-500">
-                              OCR line
-                            </summary>
-                            <p className="mt-2 max-w-xs whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-gray-500">
+                            <summary className="cursor-pointer font-semibold text-ink-soft">OCR line</summary>
+                            <p className="mt-2 max-w-xs whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-muted">
                               {row.source_text}
                             </p>
                           </details>
@@ -337,40 +274,33 @@ function ReportDetail() {
           )}
 
           {ocrData.structured_data?.length > 0 && abnormalRows.length === 0 && (
-            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
-              No abnormal values were identified from report-provided flags or reference ranges.
+            <div className="card-inset mt-4 p-4 text-sm text-ink-soft">
+              No values outside the report's own flags or reference ranges were found.
             </div>
           )}
 
           {ocrData.structured_data?.length === 0 && (
-            <div className="rounded-xl border border-yellow-100 bg-yellow-50 p-4 text-sm text-yellow-800">
-              Text was extracted, but no report-evidence abnormal lab values matched the current parser.
+            <div className="mt-4 rounded-2xl bg-warn-subtle p-4 text-sm text-warn-ink">
+              Text was extracted, but no lab values matched what the reader looks for.
             </div>
           )}
 
-          <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-              Extraction Details
-            </p>
-            <p className="text-xs text-gray-500">
+          <div className="card-inset mt-4 p-4">
+            <p className="eyebrow mb-2">Extraction details</p>
+            <p className="text-sm text-muted">
               Engine: {ocrData.ocr_engine || "unknown"} · Parser: {ocrData.parser_version || "unknown"} · Parsed rows: {ocrData.structured_count ?? ocrData.structured_data?.length ?? 0}
             </p>
-            {ocrData.error_message && (
-              <p className="text-xs text-red-500 mt-2">{ocrData.error_message}</p>
-            )}
+            {ocrData.error_message && <p className="mt-2 text-sm font-semibold text-bad-ink">{ocrData.error_message}</p>}
             {ocrData.extracted_text && (
-              <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap text-xs text-gray-600 font-mono">
+              <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap font-mono text-xs text-ink-soft">
                 {ocrData.extracted_text}
               </pre>
             )}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
 }
 
 export default ReportDetail;
-
-
-

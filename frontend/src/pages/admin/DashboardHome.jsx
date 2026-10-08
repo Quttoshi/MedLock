@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Users, Stethoscope, Building2, Clock, ChevronRight, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getAdminUsers, getAdminDoctors, getAdminMedicalCenters } from "../../api/admin";
-import { useNavigate } from "react-router-dom";
 
 function AdminDashboardHome() {
   const { token } = useAuth();
-  const navigate = useNavigate();
   const [stats, setStats] = useState({
-    totalUsers: "—",
-    totalDoctors: "—",
-    pendingMCs: "—",
-    totalMCs: "—",
+    totalUsers: "-",
+    totalDoctors: "-",
+    pendingMCs: "-",
+    totalMCs: "-",
   });
 
   useEffect(() => {
@@ -33,130 +33,67 @@ function AdminDashboardHome() {
   }, [token]);
 
   const statCards = [
-    {
-      label: "Total Users",
-      value: stats.totalUsers,
-      color: "bg-gray-100 text-gray-700",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-    },
-    {
-      label: "Total Doctors",
-      value: stats.totalDoctors,
-      color: "bg-gray-100 text-gray-700",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-    },
-    {
-      label: "Total Medical Centers",
-      value: stats.totalMCs,
-      color: "bg-gray-100 text-gray-700",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-      ),
-    },
-    {
-      label: "Pending MC Approvals",
-      value: stats.pendingMCs,
-      color: "bg-yellow-50 text-yellow-600",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
+    { label: "Total users", value: stats.totalUsers, Icon: Users, tone: "bg-brand-subtle text-brand" },
+    { label: "Doctors", value: stats.totalDoctors, Icon: Stethoscope, tone: "bg-brand-subtle text-brand" },
+    { label: "Medical centers", value: stats.totalMCs, Icon: Building2, tone: "bg-brand-subtle text-brand" },
+    { label: "Not yet approved", value: stats.pendingMCs, Icon: Clock, tone: "bg-warn-subtle text-warn-ink" },
   ];
 
   const quickActions = [
-    {
-      label: "Manage Medical Centers",
-      description: "Approve or reject pending registrations",
-      path: "/admin/medical-centers",
-      color: "bg-gray-500 hover:bg-gray-600 text-white",
-    },
-    {
-      label: "Manage Doctors",
-      description: "Verify or unverify doctor accounts",
-      path: "/admin/doctors",
-      color: "bg-gray-500 hover:bg-gray-600 text-white",
-    },
-    {
-      label: "View Audit Logs",
-      description: "Monitor all system activity",
-      path: "/admin/audit-logs",
-      color: "bg-gray-500 hover:bg-gray-600 text-white",
-    },
+    { label: "Medical centers", description: "Approve or reject registrations", path: "/admin/medical-centers" },
+    { label: "Doctors", description: "Review license requests and verification", path: "/admin/doctors" },
+    { label: "Audit logs", description: "Monitor activity across the platform", path: "/admin/audit-logs" },
   ];
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-        <p className="text-gray-500 mt-1 text-sm">
-          System overview and governance controls.
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl">
+      <h1 className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
+        Platform <em>overview</em>
+      </h1>
+      <p className="mt-3 text-sm text-muted">System overview and governance controls.</p>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        {statCards.map((stat) => (
-          <div key={stat.label}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color}`}>
-              {stat.icon}
+      <dl className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {statCards.map((stat) => {
+          const StatIcon = stat.Icon;
+          return (
+            <div key={stat.label} className="card flex items-center gap-4 p-5">
+              <span className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${stat.tone}`}>
+                <StatIcon aria-hidden="true" size={22} />
+              </span>
+              <div>
+                <dd className="display text-[28px] leading-none text-ink">{stat.value}</dd>
+                <dt className="mt-1 text-sm text-muted">{stat.label}</dt>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+          );
+        })}
+      </dl>
 
-      {/* Quick Actions */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {quickActions.map((action) => (
-            <button
-              key={action.path}
-              onClick={() => navigate(action.path)}
-              className={`${action.color} rounded-2xl p-5 text-left transition shadow-sm`}
+      <h2 className="eyebrow mb-3 mt-10">Quick actions</h2>
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {quickActions.map((a) => (
+          <li key={a.path}>
+            <Link
+              to={a.path}
+              className="card flex h-full items-start justify-between gap-3 p-5 transition-colors hover:border-line-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             >
-              <p className="font-semibold text-base">{action.label}</p>
-              <p className="text-sm opacity-80 mt-1">{action.description}</p>
-            </button>
-          ))}
-        </div>
-      </div>
+              <span>
+                <span className="block text-base font-bold text-ink">{a.label}</span>
+                <span className="mt-1 block text-sm leading-5 text-muted">{a.description}</span>
+              </span>
+              <ChevronRight aria-hidden="true" size={18} className="mt-1 flex-shrink-0 text-muted" />
+            </Link>
+          </li>
+        ))}
+      </ul>
 
-      {/* Governance Notice */}
-      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 flex gap-4 items-start">
-        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
+      <div className="panel-deep mt-10 flex gap-4 p-6">
+        <ShieldCheck aria-hidden="true" size={24} className="mt-0.5 flex-shrink-0 text-deep-on-muted" />
         <div>
-          <p className="text-sm font-semibold text-gray-800">Governance Role Only</p>
-          <p className="text-sm text-gray-600 mt-0.5">
-            As System Admin you have no access to patient clinical data or medical records.
-            Your role is strictly limited to platform governance, Medical Center approvals,
-            and audit log monitoring.
+          <p className="text-base font-bold">Governance role only</p>
+          <p className="mt-1 text-sm leading-6 text-deep-on-soft">
+            As system admin you have no access to patient clinical data or medical records. Your role is limited to
+            platform governance, medical center approvals, doctor verification and audit log monitoring.
           </p>
         </div>
       </div>
@@ -165,5 +102,3 @@ function AdminDashboardHome() {
 }
 
 export default AdminDashboardHome;
-
-

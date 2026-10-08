@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import api from "../../api/axios";
 import PasswordInput from "../../components/PasswordInput";
+import AuthShell from "../../components/shell/AuthShell";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 
 const ROLE_ENDPOINTS = {
   patient: "/auth/register",
@@ -9,22 +11,27 @@ const ROLE_ENDPOINTS = {
   medical_center: "/auth/register/medical-center",
 };
 
-function Field({ label, name, type = "text", placeholder, value, onChange, error }) {
+function Field({ label, name, type = "text", placeholder, value, onChange, error, optional }) {
   const Input = type === "password" ? PasswordInput : "input";
+  const id = `f-${name}`;
   return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <div>
+      <label htmlFor={id} className="field-label">
+        {label}
+        {optional && <span className="ml-1.5 font-normal text-muted">(optional)</span>}
+      </label>
       <Input
+        id={id}
         type={type}
         name={name}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={`w-full px-4 py-2.5 border rounded-lg text-sm
-                    focus:outline-none focus:ring-2 focus:ring-blue-500 transition
-                    ${error ? "border-red-400 bg-red-50" : "border-gray-300 bg-white"}`}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
+        className="field"
       />
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      {error && <p id={`${id}-error`} className="field-error">{error}</p>}
     </div>
   );
 }
@@ -146,183 +153,136 @@ function RegisterPage() {
 
   // ── Render ───────────────────────────────────────────
   return (
-    <div className="auth-shell min-h-screen
-                    flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 border border-white/70">
+    <AuthShell>
+      <h1 className="display text-[40px] leading-tight text-ink">Create your account</h1>
+      <p className="mt-2 text-sm text-muted">
+        Registering as <span className="font-bold text-ink">{ROLE_LABELS[role]}</span>
+      </p>
 
-        {/* Logo + Title */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16
-                          bg-gradient-to-br from-blue-600 to-teal-500 rounded-2xl mb-4 shadow-lg shadow-blue-100">
-            <span className="text-white text-2xl font-bold">M</span>
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900">MedLock</h1>
-          <p className="text-gray-500 mt-1 text-sm">Registering as <span className="font-semibold text-blue-600">{ROLE_LABELS[role]}</span></p>
+      {serverError && (
+        <div role="alert" className="mt-6 flex items-start gap-2.5 rounded-xl bg-bad-subtle p-3.5 text-sm font-semibold text-bad-ink">
+          <AlertCircle aria-hidden="true" size={18} className="mt-0.5 flex-shrink-0" />
+          {serverError}
         </div>
+      )}
 
-        {/* Server Error Banner */}
-        {serverError && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-            {serverError}
-          </div>
+      <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-5">
+        <Field
+          label={role === "medical_center" ? "Center or hospital name" : "Full name"}
+          name="name"
+          placeholder={role === "medical_center" ? "City General Hospital" : "Muhammad Ali"}
+          value={formData.name}
+          onChange={handleChange}
+          error={errors.name}
+        />
+        <Field label="Email" name="email" type="email" placeholder="you@example.com" value={formData.email} onChange={handleChange} error={errors.email} />
+
+        {/* Patient extra fields */}
+        {role === "patient" && (
+          <>
+            <div>
+              <label htmlFor="f-date_of_birth" className="field-label">
+                Date of birth <span className="ml-1.5 font-normal text-muted">(optional)</span>
+              </label>
+              <input
+                id="f-date_of_birth"
+                type="date"
+                name="date_of_birth"
+                value={formData.date_of_birth}
+                onChange={handleChange}
+                max={new Date().toISOString().split("T")[0]}
+                className="field"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="f-gender" className="field-label">
+                Gender <span className="ml-1.5 font-normal text-muted">(optional)</span>
+              </label>
+              <select id="f-gender" name="gender" value={formData.gender} onChange={handleChange} className="field">
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="f-blood_group" className="field-label">
+                Blood group <span className="ml-1.5 font-normal text-muted">(optional)</span>
+              </label>
+              <select id="f-blood_group" name="blood_group" value={formData.blood_group} onChange={handleChange} className="field">
+                <option value="">Select blood group</option>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+
+            <fieldset className="card-inset space-y-5 p-4">
+              <legend className="px-1 text-sm font-bold text-ink">
+                Emergency contact <span className="ml-1.5 font-normal text-muted">(optional)</span>
+              </legend>
+              <Field
+                label="Contact name"
+                name="emergency_contact_name"
+                placeholder="e.g. Ahmed Ali"
+                value={formData.emergency_contact_name}
+                onChange={handleChange}
+                error={errors.emergency_contact_name}
+              />
+              <Field
+                label="Contact phone"
+                name="emergency_contact_phone"
+                placeholder="e.g. +92 300 1234567"
+                value={formData.emergency_contact_phone}
+                onChange={handleChange}
+                error={errors.emergency_contact_phone}
+              />
+            </fieldset>
+          </>
         )}
 
-        <form onSubmit={handleSubmit} noValidate>
+        {/* Doctor extra fields */}
+        {role === "doctor" && (
+          <>
+            <Field label="Specialization" name="specialization" placeholder="e.g. Cardiology" value={formData.specialization} onChange={handleChange} error={errors.specialization} />
+            <Field label="Medical license number" name="license_number" placeholder="PKM-12345" value={formData.license_number} onChange={handleChange} error={errors.license_number} />
+          </>
+        )}
 
-          <Field
-            label={role === "medical_center" ? "Center / Hospital Name" : "Full Name"}
-            name="name"
-            placeholder={role === "medical_center" ? "City General Hospital" : "Muhammad Ali"}
-            value={formData.name}
-            onChange={handleChange}
-            error={errors.name}
-          />
-          <Field label="Email Address" name="email" type="email" placeholder="you@example.com" value={formData.email} onChange={handleChange} error={errors.email} />
+        {/* Medical Center extra fields */}
+        {role === "medical_center" && (
+          <>
+            <Field label="License number" name="license_number" placeholder="MC-98765" value={formData.license_number} onChange={handleChange} error={errors.license_number} />
+            <Field label="Address" name="address" placeholder="123 Main St, Karachi" value={formData.address} onChange={handleChange} error={errors.address} />
+          </>
+        )}
 
-          {/* Patient extra fields */}
-          {role === "patient" && (
-            <>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span className="text-gray-400 font-normal">(optional)</span></label>
-                <input
-                  type="date"
-                  name="date_of_birth"
-                  value={formData.date_of_birth}
-                  onChange={handleChange}
-                  max={new Date().toISOString().split("T")[0]}
-                  className="w-full px-4 py-2.5 border border-gray-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gender <span className="text-gray-400 font-normal">(optional)</span></label>
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-700"
-                >
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Blood Group <span className="text-gray-400 font-normal">(optional)</span></label>
-                <select
-                  name="blood_group"
-                  value={formData.blood_group}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-700"
-                >
-                  <option value="">Select blood group</option>
-                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-1">
-                <p className="text-sm font-medium text-gray-700 mb-2">Emergency Contact <span className="text-gray-400 font-normal">(optional)</span></p>
-                <Field
-                  label="Contact Name"
-                  name="emergency_contact_name"
-                  placeholder="e.g. Ahmed Ali"
-                  value={formData.emergency_contact_name}
-                  onChange={handleChange}
-                  error={errors.emergency_contact_name}
-                />
-                <Field
-                  label="Contact Phone"
-                  name="emergency_contact_phone"
-                  placeholder="e.g. +92 300 1234567"
-                  value={formData.emergency_contact_phone}
-                  onChange={handleChange}
-                  error={errors.emergency_contact_phone}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Doctor extra fields */}
-          {role === "doctor" && (
-            <>
-              <Field label="Specialization" name="specialization" placeholder="e.g. Cardiology" value={formData.specialization} onChange={handleChange} error={errors.specialization} />
-              <Field label="Medical License Number" name="license_number" placeholder="PKM-12345" value={formData.license_number} onChange={handleChange} error={errors.license_number} />
-            </>
-          )}
-
-          {/* Medical Center extra fields */}
-          {role === "medical_center" && (
-            <>
-              <Field label="License Number" name="license_number" placeholder="MC-98765" value={formData.license_number} onChange={handleChange} error={errors.license_number} />
-              <Field label="Address" name="address" placeholder="123 Main St, Karachi" value={formData.address} onChange={handleChange} error={errors.address} />
-            </>
-          )}
-
-          <Field label="Password" name="password" type="password" placeholder="Min 8 chars, 1 uppercase, 1 number" value={formData.password} onChange={handleChange} error={errors.password} />
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password
-            </label>
-            <PasswordInput
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 transition
-                          ${errors.confirmPassword ? "border-red-400 bg-red-50" : "border-gray-300 bg-white"}`}
-            />
-            {errors.confirmPassword && (
-              <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white
-                       font-semibold py-2.5 rounded-lg transition
-                       disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10"
-                    stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-                Creating account...
-              </span>
-            ) : "Create Account"}
-          </button>
-        </form>
-
-        <div className="flex flex-col items-center gap-2 mt-6">
-          <p className="text-center text-sm text-gray-500">
-            Already have an account?{" "}
-            <Link to="/login" className="text-blue-600 hover:underline font-medium">
-              Sign in here
-            </Link>
-          </p>
-          <button
-            onClick={() => navigate("/register")}
-            className="text-sm text-gray-400 hover:text-gray-600 hover:underline"
-          >
-            ← Choose a different role
-          </button>
+        <div>
+          <Field label="Password" name="password" type="password" placeholder="" value={formData.password} onChange={handleChange} error={errors.password} />
+          <p className="field-hint">At least 8 characters, with one uppercase letter and one number.</p>
         </div>
+
+        <Field label="Confirm password" name="confirmPassword" type="password" placeholder="" value={formData.confirmPassword} onChange={handleChange} error={errors.confirmPassword} />
+
+        <button type="submit" disabled={loading} className="btn btn-primary btn-lg w-full">
+          {loading ? "Creating account..." : "Create account"}
+        </button>
+      </form>
+
+      <div className="mt-6 flex flex-col items-center gap-3 text-sm text-muted">
+        <p>
+          Already have an account?{" "}
+          <Link to="/login" className="link">Sign in</Link>
+        </p>
+        <button type="button" onClick={() => navigate("/register")} className="link inline-flex items-center gap-1.5 no-underline hover:underline">
+          <ArrowLeft aria-hidden="true" size={16} />
+          Choose a different role
+        </button>
       </div>
-    </div>
+    </AuthShell>
   );
 }
 
 export default RegisterPage;
-
-
-
