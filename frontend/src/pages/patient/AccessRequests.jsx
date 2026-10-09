@@ -64,7 +64,7 @@ function PendingCard({ request, onApprove, onDeny, actionLoading }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h3 className="text-base font-bold text-ink">{doctorLabel(request.doctor_name)}</h3>
+              <h2 className="text-base font-bold text-ink">{doctorLabel(request.doctor_name)}</h2>
               <p className="text-sm text-muted">{request.doctor_specialization}</p>
               <VerificationNote request={request} />
             </div>
@@ -125,7 +125,7 @@ function HistoryCard({ request, onRevoke, actionLoading }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h3 className="text-base font-bold text-ink">{doctorLabel(request.doctor_name)}</h3>
+              <h2 className="text-base font-bold text-ink">{doctorLabel(request.doctor_name)}</h2>
               <p className="text-sm text-muted">{request.doctor_specialization}</p>
               <VerificationNote request={request} />
             </div>

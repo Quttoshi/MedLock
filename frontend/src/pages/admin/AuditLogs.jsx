@@ -59,39 +59,39 @@ function AuditLogs() {
         Activity across the platform. Read only, and it never includes record content.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-5">
         <FilterChips label="Filter by activity" options={CATEGORY_OPTIONS} value={category} onChange={changeCategory} />
       </div>
 
       {loading ? (
         <p className="mt-10 text-center text-muted">Loading...</p>
       ) : logs.length === 0 ? (
-        <div className="card card-pad mt-6 text-center text-sm text-muted">No logs found.</div>
+        <div className="mt-5 rounded-lg border border-dashed border-line-strong px-4 py-8 text-center text-sm text-muted">No logs found.</div>
       ) : (
-        <div className="card mt-6 overflow-x-auto">
+        <div className="mt-5 overflow-x-auto rounded-lg border border-line bg-surface">
           <table className="w-full text-sm">
             <caption className="sr-only">Audit log entries</caption>
-            <thead className="!bg-inset">
+            <thead className="bg-inset">
               <tr>
                 {["Action", "User", "Entity", "IP address", "Time"].map((h) => (
-                  <th key={h} scope="col" className="px-5 py-3 text-left text-[13px] font-bold !text-muted">{h}</th>
+                  <th key={h} scope="col" className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wider text-muted">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {logs.map((log) => (
                 <tr key={log.id}>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3">
                     <span className={`pill capitalize ${actionTone(log.action)}`}>
                       {log.action?.replaceAll("_", " ")}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-ink-soft">{log.performer_name || log.performed_by || "-"}</td>
-                  <td className="px-5 py-4 text-ink-soft">
+                  <td className="px-4 py-3 text-ink-soft">{log.performer_name || log.performed_by || "-"}</td>
+                  <td className="px-4 py-3 text-ink-soft">
                     {log.entity_type ? `${log.entity_type} #${log.entity_id}` : "-"}
                   </td>
-                  <td className="px-5 py-4 font-mono text-[13px] text-ink-soft">{log.ip_address || "-"}</td>
-                  <td className="whitespace-nowrap px-5 py-4 text-ink-soft">
+                  <td className="px-4 py-3 font-mono text-[13px] text-ink-soft">{log.ip_address || "-"}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-ink-soft">
                     {log.created_at ? parseServerDate(log.created_at).toLocaleString() : "-"}
                   </td>
                 </tr>

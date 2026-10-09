@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { Lock } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import AvatarMenu from "./AvatarMenu";
 import ThemeToggle from "../../theme/ThemeToggle";
@@ -38,8 +39,11 @@ export default function TopNav({ links = PATIENT_LINKS, homePath = "/patient/das
   return (
     <header className="mx-auto w-full max-w-[1280px] px-5 pt-6 md:px-8 md:pt-8">
       <div className="flex items-center justify-between gap-4 md:grid md:grid-cols-[1fr_auto_1fr]">
-        <NavLink to={homePath} className="flex items-baseline gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand">
-          <span className="display text-[28px] leading-none text-ink">MedLock</span>
+        <NavLink to={homePath} className="flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand">
+          <Lock aria-hidden="true" size={26} strokeWidth={2.2} className="text-brand" />
+          <span className="display text-[28px] leading-none text-ink" aria-label="MedLock">
+            <span aria-hidden="true">med<span className="font-semibold text-brand">lock</span></span>
+          </span>
           {badge && <span className="hidden whitespace-nowrap text-sm font-semibold text-muted sm:inline">{badge}</span>}
         </NavLink>
         <div className="hidden md:block">

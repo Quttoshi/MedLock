@@ -1,28 +1,21 @@
 import { Outlet } from "react-router-dom";
-import TopNav from "../components/shell/TopNav";
+import DashTopNav from "../components/shell/DashTopNav";
+import { ADMIN_LINKS } from "../components/shell/adminLinks";
 import { NotificationProvider } from "../context/NotificationContext";
+import "../styles/dash.css";
 
-const ADMIN_LINKS = [
-  { label: "Home", to: "/admin/dashboard" },
-  { label: "Users", to: "/admin/users" },
-  { label: "Doctors", to: "/admin/doctors" },
-  { label: "Centers", to: "/admin/medical-centers" },
-  { label: "Emergency", to: "/admin/emergency" },
-  { label: "Audit", to: "/admin/audit-logs" },
-];
-
-// Admin shell (Template A top bar). Routes and the auth guard in App.jsx are unchanged.
+// Admin shell (top bar with icons, .dash look). Routes and the auth guard in App.jsx are unchanged.
 function AdminLayout() {
   return (
     <NotificationProvider>
-      <div className="min-h-screen bg-canvas font-sans text-ink">
+      <div className="dash min-h-screen bg-canvas font-sans text-ink">
         <a
           href="#main"
-          className="sr-only rounded-full bg-deep px-4 py-2 text-sm font-semibold text-deep-on focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
+          className="sr-only rounded-md bg-deep px-4 py-2 text-sm font-semibold text-deep-on focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
         >
           Skip to content
         </a>
-        <TopNav
+        <DashTopNav
           links={ADMIN_LINKS}
           homePath="/admin/dashboard"
           notificationsPath="/admin/notifications"

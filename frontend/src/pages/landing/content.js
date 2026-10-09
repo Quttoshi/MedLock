@@ -1,203 +1,188 @@
 // All the words on the landing page live here, so they are easy to edit
-// without touching the layout. Keep claims accurate: AES 256 is applied before
-// storage, fingerprints go to the Ethereum Sepolia TEST network, access
-// decisions are audit logged (not on the blockchain), and approved access
-// lasts a fixed 30 days.
-import {
-  STANDARD_MAX_MB,
-  STANDARD_TYPES_LABEL,
-  IMAGING_MAX_MB,
-  IMAGING_TYPES_LABEL,
-} from "../../constants/upload";
+// without touching the layout. Keep claims accurate: AES 256 is applied on the
+// server before storage, fingerprints go to the Ethereum Sepolia TEST network,
+// access decisions are audit logged (not on the blockchain), and approved
+// access lasts a fixed 30 days. Do not claim HIPAA or any certification.
 
 export const NAV_LINKS = [
-  { label: "How it works", href: "#how" },
-  { label: "Features", href: "#features" },
+  { label: "Platform", href: "#platform" },
+  { label: "Who We Serve", href: "#roles" },
   { label: "Security", href: "#security" },
-  { label: "Who it is for", href: "#roles" },
-  { label: "Questions", href: "#faq" },
+  { label: "How It Works", href: "#how" },
+  { label: "About Us", href: "#about" },
 ];
 
-export const HERO_POINTS = [
-  { icon: "lock", text: "Encrypted with AES 256 before storage" },
-  { icon: "link", text: "Integrity fingerprints on Ethereum Sepolia testnet" },
-  { icon: "scan", text: "Reads printed reports for you" },
-];
+export const HERO = {
+  title: "Medical records that stay in the patient's hands",
+  text: "MedLock keeps every report, scan and prescription in one encrypted record. Patients decide which doctors can see it, and every access decision is written to an audit log. Because your health history should never start from zero.",
+  primary: "Create your account",
+  secondary: "See how MedLock works",
+};
 
-export const AT_A_GLANCE = [
-  { value: "AES 256", label: "encryption applied before a file is stored" },
-  { value: "30 days", label: "fixed access window when you approve a doctor" },
-  { value: "SHA 256", label: "fingerprint recorded for every report" },
-  { value: "3 roles", label: "patients, doctors and medical centers" },
-];
+export const CALLOUT = {
+  title: "Doctors ask. Patients approve. Every access stays on record.",
+  link: "Explore our security model",
+};
 
-export const PROBLEMS = [
-  {
-    title: "Records are scattered",
-    text: "Lab results sit in one hospital system, scans in another and prescriptions in a drawer at home.",
-  },
-  {
-    title: "Tests get repeated",
-    text: "A new doctor often cannot see what was done before, so the same tests are ordered again.",
-  },
-  {
-    title: "You rarely control who sees what",
-    text: "Once a report is shared, it is hard to know who has it, or to take access back.",
-  },
-];
+export const PLATFORM = {
+  eyebrow: "Patient records and more with",
+  text: "One secure platform that brings together encrypted record storage, patient approved sharing, report reading for printed text and medical imaging, for patients, doctors and medical centers.",
+  cta: "Learn more about MedLock",
+  cards: [
+    {
+      image: "/images/landing/diagnostic-lab.jpg",
+      alt: "A technician working in a diagnostic laboratory",
+      position: "center",
+      title: "Results delivered, not printed",
+      text: "Labs and hospitals upload reports and scans straight into the patient's record, each one fingerprinted for later proof.",
+      link: "Explore for medical centers",
+      role: "center",
+    },
+    {
+      image: "/images/landing/doctor-portrait.jpg",
+      alt: "A smiling doctor in a white coat",
+      position: "center 25%",
+      title: "The full picture before the visit",
+      text: "With the patient's approval, doctors review reports from every lab and clinic together, and check that each one is unchanged.",
+      link: "Explore for doctors",
+      role: "doctor",
+    },
+  ],
+};
 
-export const STEPS = [
-  {
-    title: "Add a report",
-    text: "Upload a PDF or a photo of a lab report, prescription or discharge summary. Hospitals can also upload straight to your record, and you approve it first.",
-  },
-  {
-    title: "It is protected and fingerprinted",
-    text: "The file is encrypted before it is stored. A fingerprint of it is recorded on the Ethereum Sepolia testnet, and printed text is read so you can check it against the original.",
-  },
-  {
-    title: "You decide who sees it",
-    text: "A verified doctor sends an access request. You approve or deny it. Approval lasts 30 days, and you can take it back at any time.",
-  },
-];
+// "to" is where the button in each tab goes. Every route already exists.
+export const ROLES = {
+  eyebrow: "Who we serve",
+  title: "Built for everyone who touches a medical record",
+  tabs: [
+    {
+      id: "patient",
+      label: "Patients",
+      title: "Your records, your decision",
+      body: "Keep every report in one place, carry your history to any doctor or city, and approve access before your appointment.",
+      cta: "Create a patient account",
+      to: "/register/patient",
+      points: [
+        { head: "Continuity of care", text: "Your full history moves with you when you change doctors or cities." },
+        { head: "Pre appointment access", text: "Approve a request in advance so the visit is spent on decisions." },
+        { head: "Protection against lost reports", text: "An encrypted copy stays safe even if the paper is lost." },
+      ],
+    },
+    {
+      id: "doctor",
+      label: "Doctors",
+      title: "The full picture before the patient walks in",
+      body: "With the patient's approval, review reports from every lab and clinic together and check that each one is unchanged.",
+      cta: "Create a doctor account",
+      to: "/register/doctor",
+      points: [
+        { head: "Pre visit review", text: "Read reports before the appointment and save consultation time." },
+        { head: "Avoid repeated tests", text: "See recent tests and spare the patient extra cost and delay." },
+        { head: "Trust in the data", text: "An integrity check confirms each report matches its original upload." },
+      ],
+    },
+    {
+      id: "center",
+      label: "Medical centers",
+      title: "Deliver results straight into the record",
+      body: "Hospitals, clinics and labs upload reports and scans directly to the patient, who approves them before they appear.",
+      cta: "Register your medical center",
+      to: "/register/medical_center",
+      points: [
+        { head: "Direct result delivery", text: "Cut lost papers and follow up calls by skipping the printout." },
+        { head: "Trackable uploads", text: "Every report gets a fingerprint that can later show it is unchanged." },
+        { head: "Imaging delivery", text: "Scan files go straight to the patient, no CDs needed." },
+      ],
+    },
+    {
+      id: "admin",
+      label: "Admins",
+      title: "Keep the network trustworthy",
+      body: "Admins review doctors and medical centers, so every participant on MedLock is who they say they are.",
+      cta: "Admin sign in",
+      to: "/login",
+      points: [
+        { head: "License verification", text: "Check doctor licenses before they can request records." },
+        { head: "Center review", text: "Approve hospitals, clinics and labs before they can upload." },
+        { head: "Privacy for patients", text: "Admin screens never show report content, scan previews or extracted values." },
+      ],
+    },
+  ],
+};
 
-export const FEATURES = [
-  {
-    icon: "lock",
-    title: "Encrypted before storage",
-    text: "Every file is encrypted with AES 256 before it is stored, so it is never kept as a plain file.",
-  },
-  {
-    icon: "userCheck",
-    title: "Access only with your approval",
-    text: "Doctors have to ask. You approve or deny each request, and revoke it whenever you like.",
-  },
-  {
-    icon: "shieldCheck",
-    title: "Integrity you can check",
-    text: "Verify a record at any time. MedLock compares the file with the fingerprint recorded when it was uploaded and tells you if it no longer matches.",
-  },
-  {
-    icon: "scan",
-    title: "Printed text, read for you",
-    text: "Values from printed and typed reports are extracted so you can scan them quickly. Always check them against the original file. Handwriting is not read.",
-  },
-  {
-    icon: "layers",
-    title: "Scans, not just PDFs",
-    text: "CT and MRI studies can be uploaded as DICOM files and scrolled through slice by slice in the browser.",
-  },
-  {
-    icon: "badgeCheck",
-    title: "Verified doctors and centers",
-    text: "Medical centers are approved by an admin, and doctors are verified against their license before they work with patient records.",
-  },
-];
+export const SECURITY = {
+  eyebrow: "See the difference",
+  title: "Privacy isn't a setting. It's how MedLock is built.",
+  cta: "Create your account",
+  stats: [
+    { value: "AES 256", text: "Every uploaded file is encrypted before it is stored" },
+    { value: "30 days", text: "Fixed access window when a patient approves a doctor" },
+    { value: "SHA 256", text: "A fingerprint of each report is recorded on Ethereum Sepolia testnet" },
+    { value: "Audit log", text: "Logins, uploads and every access decision are recorded" },
+  ],
+};
 
-export const ROLES = [
-  {
-    key: "patient",
-    label: "Patients",
-    title: "One place for your whole history",
-    text: "Keep reports from every hospital together and share them only when you choose to.",
-    points: [
-      "A timeline of every report and scan",
-      "Approve or deny each access request",
-      "Check that a file has not changed",
-    ],
-    cta: "Create a patient account",
-    to: "/register/patient",
-  },
-  {
-    key: "doctor",
-    label: "Doctors",
-    title: "The full picture, with consent",
-    text: "Ask a patient for access and read their approved records in one place.",
-    points: [
-      "Send access requests to patients",
-      "Read approved records, including scans",
-      "Verified by license or through your hospital",
-    ],
-    cta: "Register as a doctor",
-    to: "/register/doctor",
-  },
-  {
-    key: "center",
-    label: "Medical centers",
-    title: "Upload once, share safely",
-    text: "Send results straight to the patient's record and manage the doctors affiliated with your center.",
-    points: [
-      "Upload reports and imaging for patients",
-      "Patients approve before it joins their record",
-      "Verify the doctors who work with you",
-    ],
-    cta: "Register a medical center",
-    to: "/register/medical_center",
-  },
-];
+export const HOW = {
+  eyebrow: "How it works",
+  title: "From lab report to doctor's desk in three steps",
+  steps: [
+    {
+      title: "Reports arrive",
+      text: "Labs and hospitals upload results straight to the patient's account, or the patient adds a photo or PDF of a paper report.",
+    },
+    {
+      title: "The patient approves",
+      text: "A doctor asks for access using the patient's email. The patient approves or declines, and the decision goes into the audit log.",
+    },
+    {
+      title: "The doctor reviews",
+      text: "The full history is ready before the visit, so the consultation is spent on decisions. Access ends after 30 days.",
+    },
+  ],
+};
 
-export const SECURITY_CARDS = [
-  {
-    title: "Encrypted before it is stored",
-    text: "Files are locked with AES 256 on the server before they are saved. Only people you approve can open them through MedLock.",
-  },
-  {
-    title: "Fingerprinted on a public network",
-    text: "A SHA 256 fingerprint of each report is recorded on the Ethereum Sepolia testnet. The record itself is never put on the blockchain.",
-  },
-  {
-    title: "Access decisions are logged",
-    text: "Requests, approvals, denials and revocations are written to an audit log. Admins can see activity, but never the content of a record.",
-  },
-];
+export const HELP = {
+  title: "Let us help you",
+  cards: [
+    {
+      icon: "user",
+      title: "For patients",
+      text: "Create an account and keep your full medical history in one secure place.",
+      link: "Create your account",
+      to: "/register/patient",
+    },
+    {
+      icon: "building",
+      title: "For hospitals, clinics and labs",
+      text: "Register your medical center to deliver results directly into patient records.",
+      link: "Register your center",
+      to: "/register/medical_center",
+    },
+  ],
+};
 
-export const SECURITY_SAMPLE = [
-  ["record", "CBC Blood Panel"],
-  ["sha256", "7a3f09e2…3a2fc91e"],
-  ["chain", "Ethereum Sepolia testnet"],
-  ["status", "match, intact"],
-];
-
-export const HONEST_LIMITS = [
-  "Sepolia is a test network, not the main Ethereum network.",
-  "MedLock is a university project. It has not been independently audited or certified.",
-  "It does not give medical advice, diagnosis or treatment. Always talk to your doctor.",
-];
-
-export const FAQS = [
-  {
-    q: "Can MedLock staff read my records?",
-    a: "Files are encrypted with AES 256 before they are stored, and only people you approve can open them through MedLock. Admins manage accounts and approvals, and their screens never show record content.",
-  },
-  {
-    q: "What does the blockchain actually store?",
-    a: "Only a fingerprint (a SHA 256 hash) of each report, never the report itself. It lets MedLock show whether a file has changed since it was uploaded. The network used is Ethereum Sepolia, a test network.",
-  },
-  {
-    q: "How long does a doctor's access last?",
-    a: "When you approve a request, the doctor gets access for 30 days. After that it ends by itself. You can also take it back earlier, and the doctor can no longer open your records.",
-  },
-  {
-    q: "Can I add old paper reports?",
-    a: `Yes, as a photo or a scan. ${STANDARD_TYPES_LABEL} files are accepted up to ${STANDARD_MAX_MB}MB. MedLock reads printed and typed text, so check the extracted values against the original. Handwriting is not read.`,
-  },
-  {
-    q: "Can I upload CT or MRI scans?",
-    a: `Yes. Upload a ${IMAGING_TYPES_LABEL}, up to ${IMAGING_MAX_MB}MB, and you can scroll through the slices in your browser.`,
-  },
-  {
-    q: "Does MedLock diagnose anything?",
-    a: "No. MedLock stores and shares your records. The extracted values are there to help you read a report, not to interpret it. Your doctor does that.",
-  },
-  {
-    q: "How are doctors and medical centers verified?",
-    a: "Medical centers are approved by an admin. A doctor is verified by their medical center, or by an admin who checks their license on the PMDC register. A doctor has to be verified before working with patient records.",
-  },
-  {
-    q: "Who built MedLock?",
-    a: "MedLock is a final year project at FAST NUCES Islamabad, built by three students and supervised by a faculty member.",
-  },
-];
+export const FOOTER = {
+  tagline: "Medical record management with the patient in control.",
+  columns: [
+    {
+      title: "Platform",
+      links: [
+        { label: "Encryption", href: "#security" },
+        { label: "Audit trail", href: "#security" },
+        { label: "Report reading", href: "#platform" },
+      ],
+    },
+    {
+      title: "Who We Serve",
+      links: [
+        { label: "Patients", href: "#roles", role: "patient" },
+        { label: "Doctors", href: "#roles", role: "doctor" },
+        { label: "Medical centers", href: "#roles", role: "center" },
+      ],
+    },
+  ],
+  note: "MedLock is a university project. Fingerprints are recorded on a public test network, not on a production blockchain, and MedLock does not claim any medical compliance certification. It never gives a diagnosis, and it reads printed or typed text only.",
+};
 
 export const PROJECT = {
   university: "FAST NUCES Islamabad",

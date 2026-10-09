@@ -1,0 +1,814 @@
+/*
+ * Landing page styles.
+ *
+ * Everything here is scoped under .lp, so nothing leaks into the patient,
+ * doctor, medical center or admin screens, which keep their own look.
+ *
+ * Fonts (self hosted, latin only, open licence):
+ *   Plus Jakarta Sans   headings and numbers   (variable, weights 200 to 800)
+ *   Nunito Sans         body text              (variable, weights 200 to 1000)
+ *
+ * Colors are CSS variables with a light and a night set, so the day and night
+ * switch (data-theme on the html element) works on this page too. The photo
+ * hero, the top bar, the "how it works" band and the footer stay dark in both
+ * modes, as in the design.
+ */
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Nunito Sans';
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url('/fonts/nunito-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ------------------------------------------------------------------ */
+/* Colors                                                              */
+/* ------------------------------------------------------------------ */
+
+.lp {
+  --lp-ink: #12211d;
+  --lp-ink-soft: #3e504a;
+  --lp-bg: #ffffff;
+  --lp-tint: #f4f8f6;
+  --lp-panel: #ffffff;
+  --lp-line: #e1eae6;
+  --lp-line-strong: #b9cbc4;
+  --lp-brand: #1d6b60;
+  --lp-brand-hover: #15544b;
+  --lp-on-brand: #ffffff;
+  --lp-link: #1d6b60;
+  --lp-eyebrow: #1d6b60;
+  --lp-tab-on-bg: #12211d;
+  --lp-tab-on-fg: #ffffff;
+  --lp-focus: #1d6b60;
+
+  /* Always dark parts */
+  --lp-deep: #12211d;
+  --lp-deep-2: #1c2b27;
+  --lp-deep-line: #2f4a41;
+  --lp-deep-text: #c5d6d0;
+  --lp-mint: #a8e6dd;
+  --lp-teal: #5fcbbe;
+  --lp-pale: #e3f5f1;
+
+  background: var(--lp-bg);
+  color: var(--lp-ink);
+  min-height: 100vh;
+  font-family: 'Nunito Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-theme='dark'] .lp {
+  --lp-ink: #e6f0ec;
+  --lp-ink-soft: #a9bdb6;
+  --lp-bg: #0a1310;
+  --lp-tint: #0f1b17;
+  --lp-panel: #14231e;
+  --lp-line: #22362f;
+  --lp-line-strong: #3a5a50;
+  --lp-brand: #5fcbbe;
+  --lp-brand-hover: #86dbcf;
+  --lp-on-brand: #0a1310;
+  --lp-link: #5fcbbe;
+  --lp-eyebrow: #5fcbbe;
+  --lp-tab-on-bg: #5fcbbe;
+  --lp-tab-on-fg: #0a1310;
+  --lp-focus: #a8e6dd;
+}
+
+/* Keyboard focus is clearly visible everywhere. Dark areas use the mint ring. */
+.lp :focus-visible {
+  outline: 3px solid var(--lp-focus);
+  outline-offset: 3px;
+}
+
+.lp-top,
+.lp-hero,
+.lp-deep,
+.lp-footer {
+  --lp-focus: #a8e6dd;
+}
+
+:where(.lp) a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Type                                                                */
+/* ------------------------------------------------------------------ */
+
+.lp-display {
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.lp-h1 {
+  margin: 0;
+  font-size: clamp(2.5rem, 1.6rem + 3.4vw, 4rem);
+  line-height: 1.06;
+}
+
+.lp-h2 {
+  margin: 0;
+  font-size: clamp(1.75rem, 1.1rem + 2vw, 2.75rem);
+  line-height: 1.12;
+}
+
+.lp-h3 {
+  margin: 0;
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.625rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.lp-eyebrow {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.8125rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--lp-eyebrow);
+}
+
+.lp-lead {
+  margin: 0;
+  font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
+  line-height: 1.6;
+}
+
+.lp-muted {
+  color: var(--lp-ink-soft);
+}
+
+/* ------------------------------------------------------------------ */
+/* Layout helpers                                                      */
+/* ------------------------------------------------------------------ */
+
+.lp-wrap {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2rem);
+}
+
+.lp-section {
+  background: var(--lp-bg);
+  padding-block: clamp(3.5rem, 8vw, 6.5rem);
+}
+
+.lp-section--tint {
+  background: var(--lp-tint);
+}
+
+.lp-deep {
+  background: var(--lp-deep);
+  color: #ffffff;
+}
+
+.lp-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-skip {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  background: var(--lp-deep);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.lp-skip:focus {
+  top: 1rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons and links                                                   */
+/* ------------------------------------------------------------------ */
+
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 3.25rem;
+  padding: 0 1.75rem;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.lp-btn--lg {
+  min-height: 3.5rem;
+  padding: 0 2rem;
+  font-size: 1.0625rem;
+}
+
+.lp-btn--brand {
+  background: var(--lp-brand);
+  color: var(--lp-on-brand);
+}
+
+.lp-btn--brand:hover {
+  background: var(--lp-brand-hover);
+}
+
+.lp-btn--white {
+  background: #ffffff;
+  color: #1d6b60;
+}
+
+.lp-btn--white:hover {
+  background: var(--lp-pale);
+}
+
+.lp-btn--outline {
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+.lp-btn--outline:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.lp-btn--pale {
+  background: var(--lp-pale);
+  color: #12211d;
+}
+
+.lp-btn--pale:hover {
+  background: #ffffff;
+}
+
+.lp-btn--glass {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.lp-btn--glass:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  color: var(--lp-link);
+  text-underline-offset: 4px;
+}
+
+.lp .lp-link:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------ */
+/* Top bar and hero                                                    */
+/* ------------------------------------------------------------------ */
+
+.lp-top {
+  background: var(--lp-deep);
+  color: #ffffff;
+}
+
+.lp-top-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding-block: 0.75rem;
+}
+
+.lp-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #ffffff;
+}
+
+.lp-logo-mark {
+  font-size: 1.625rem;
+  line-height: 1;
+}
+
+.lp-logo-mark span {
+  font-weight: 600;
+  color: var(--lp-mint);
+}
+
+.lp-top-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.75rem;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.lp-top-links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.lp-hero {
+  position: relative;
+  isolation: isolate;
+  background: var(--lp-deep);
+  color: #ffffff;
+}
+
+.lp-hero-img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+
+.lp-hero-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(14, 30, 26, 0.74);
+}
+
+.lp-hero-inner {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3rem, 7vw, 5rem);
+  padding-top: 1.25rem;
+  padding-bottom: clamp(4rem, 9vw, 7rem);
+}
+
+.lp-pill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  border-radius: 999px;
+  background: rgba(28, 43, 39, 0.82);
+  border: 1px solid rgba(168, 230, 221, 0.28);
+}
+
+.lp-pill-links {
+  display: none;
+  flex: 1 1 100%;
+  order: 3;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.25rem 0 0.5rem;
+  font-weight: 600;
+  font-size: 1.0625rem;
+}
+
+.lp-pill[data-open='true'] {
+  border-radius: 1.75rem;
+}
+
+.lp-pill[data-open='true'] .lp-pill-links {
+  display: flex;
+}
+
+.lp-pill-links a {
+  padding: 0.7rem 0;
+  border-bottom: 1px solid rgba(168, 230, 221, 0.16);
+}
+
+.lp-pill-links a:last-child {
+  border-bottom: 0;
+}
+
+.lp-pill-links a:hover {
+  color: var(--lp-mint);
+}
+
+.lp-pill-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lp-pill-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.lp-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 48rem;
+}
+
+.lp-hero-copy p {
+  color: #e6f0ec;
+  max-width: 43rem;
+}
+
+.lp-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 1024px) {
+  .lp-pill {
+    padding-left: 2rem;
+    flex-wrap: nowrap;
+  }
+
+  .lp-pill-menu {
+    display: none;
+  }
+
+  .lp-pill-links {
+    display: flex;
+    flex: 1 1 auto;
+    order: 0;
+    flex-direction: row;
+    gap: 2.25rem;
+    padding: 0;
+  }
+
+  .lp-pill-links a {
+    padding: 0.6rem 0;
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .lp-hero-actions .lp-btn {
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Callout band                                                        */
+/* ------------------------------------------------------------------ */
+
+.lp-callout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 2rem;
+  text-align: center;
+}
+
+.lp-callout h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 1rem + 1.1vw, 1.875rem);
+  line-height: 1.25;
+  color: var(--lp-mint);
+}
+
+.lp-callout a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.lp-callout a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Platform                                                            */
+/* ------------------------------------------------------------------ */
+
+.lp-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 2rem 4.5rem;
+}
+
+.lp-intro > div {
+  flex: 1 1 22rem;
+}
+
+.lp-wordmark {
+  margin: 0.75rem 0 0;
+  font-size: clamp(2.75rem, 1.6rem + 4vw, 4.5rem);
+  line-height: 1;
+}
+
+.lp-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+  gap: 2rem;
+}
+
+.lp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  border: 1px solid var(--lp-line);
+  border-radius: 2rem;
+  background: var(--lp-tint);
+}
+
+.lp-card img {
+  display: block;
+  width: 100%;
+  height: clamp(13rem, 22vw, 18.75rem);
+  object-fit: cover;
+  border-radius: 1.25rem;
+}
+
+.lp-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.lp-card-body p {
+  margin: 0;
+  color: var(--lp-ink-soft);
+}
+
+.lp-card-icon {
+  color: var(--lp-brand);
+}
+
+/* ------------------------------------------------------------------ */
+/* Roles                                                               */
+/* ------------------------------------------------------------------ */
+
+.lp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.lp-tab {
+  min-height: 3rem;
+  padding: 0 1.5rem;
+  border: 2px solid var(--lp-line-strong);
+  border-radius: 999px;
+  background: var(--lp-panel);
+  color: var(--lp-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.lp-tab:hover {
+  border-color: var(--lp-ink);
+}
+
+.lp-tab[aria-selected='true'] {
+  border-color: var(--lp-tab-on-bg);
+  background: var(--lp-tab-on-bg);
+  color: var(--lp-tab-on-fg);
+}
+
+.lp-rolepanel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 2rem 3rem;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  border: 1px solid var(--lp-line);
+  border-radius: 2rem;
+  background: var(--lp-panel);
+}
+
+.lp-rolepanel > div {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.lp-points {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 1.25rem;
+  background: var(--lp-tint);
+}
+
+.lp-point svg {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+  color: var(--lp-brand);
+}
+
+.lp-point strong {
+  display: block;
+  font-weight: 800;
+}
+
+.lp-point span {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--lp-ink-soft);
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------------ */
+/* Security facts                                                      */
+/* ------------------------------------------------------------------ */
+
+.lp-split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.lp-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14.5rem), 1fr));
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-top: 1.5rem;
+  border-top: 4px solid var(--lp-brand);
+}
+
+.lp-stat-value {
+  font-size: clamp(2rem, 1.3rem + 2vw, 3rem);
+  line-height: 1;
+}
+
+.lp-stat p {
+  margin: 0;
+  color: var(--lp-ink-soft);
+}
+
+/* ------------------------------------------------------------------ */
+/* How it works                                                        */
+/* ------------------------------------------------------------------ */
+
+.lp-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr));
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  border: 1px solid var(--lp-deep-line);
+  border-radius: 1.75rem;
+  background: var(--lp-deep-2);
+}
+
+.lp-step-no {
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--lp-teal);
+}
+
+.lp-step p {
+  margin: 0;
+  color: var(--lp-deep-text);
+}
+
+/* ------------------------------------------------------------------ */
+/* Footer                                                              */
+/* ------------------------------------------------------------------ */
+
+.lp-footer {
+  background: var(--lp-deep);
+  color: var(--lp-deep-text);
+}
+
+.lp-footer-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.5rem 3rem;
+  padding-top: clamp(3rem, 6vw, 5rem);
+}
+
+.lp-footer-brand {
+  flex: 1 1 20rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lp-footer-brand p {
+  margin: 0;
+  max-width: 22rem;
+}
+
+.lp-footer-col {
+  flex: 1 1 9rem;
+}
+
+.lp-footer-col h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.lp-footer-col ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-footer a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.lp-footer-bottom {
+  margin-top: clamp(2.5rem, 5vw, 3.5rem);
+  padding-block: 1.5rem 2.5rem;
+  border-top: 1px solid var(--lp-deep-line);
+  font-size: 0.9375rem;
+}
+
+.lp-footer-bottom p {
+  margin: 0;
+}
+
+.lp-footer-bottom p + p {
+  margin-top: 0.5rem;
+}
+
+.lp-footer-note {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.lp-deep .lp-eyebrow {
+  color: var(--lp-mint);
+}

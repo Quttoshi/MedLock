@@ -40,36 +40,36 @@ function Users() {
       </h1>
       <p className="mt-3 text-sm text-muted">Every registered account on the platform.</p>
 
-      <div className="mt-8">
+      <div className="mt-5">
         <FilterChips label="Filter by role" options={ROLE_FILTERS} value={filter} onChange={setFilter} />
       </div>
 
       {loading ? (
         <p className="mt-10 text-center text-muted">Loading...</p>
       ) : users.length === 0 ? (
-        <div className="card card-pad mt-6 text-center text-sm text-muted">No users found.</div>
+        <div className="mt-5 rounded-lg border border-dashed border-line-strong px-4 py-8 text-center text-sm text-muted">No users found.</div>
       ) : (
-        <div className="card mt-6 overflow-x-auto">
+        <div className="mt-5 overflow-x-auto rounded-lg border border-line bg-surface">
           <table className="w-full text-sm">
             <caption className="sr-only">Registered users</caption>
-            <thead className="!bg-inset">
+            <thead className="bg-inset">
               <tr>
                 {["Name", "Email", "Role", "Joined"].map((h) => (
-                  <th key={h} scope="col" className="px-5 py-3 text-left text-[13px] font-bold !text-muted">{h}</th>
+                  <th key={h} scope="col" className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wider text-muted">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {users.map((u) => (
                 <tr key={u.id}>
-                  <td className="px-5 py-4 font-bold text-ink">{u.name}</td>
-                  <td className="px-5 py-4 text-ink-soft">{u.email}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3 font-bold text-ink">{u.name}</td>
+                  <td className="px-4 py-3 text-ink-soft">{u.email}</td>
+                  <td className="px-4 py-3">
                     <span className={`pill capitalize ${roleTone[u.role] || "pill-plain"}`}>
                       {u.role?.replace("_", " ")}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-ink-soft">
+                  <td className="px-4 py-3 text-ink-soft">
                     {u.created_at ? parseServerDate(u.created_at).toLocaleDateString() : "-"}
                   </td>
                 </tr>

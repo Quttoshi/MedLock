@@ -1,21 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import TopNav from "../components/shell/TopNav";
+import DashTopNav from "../components/shell/DashTopNav";
+import { MC_LINKS } from "../components/shell/mcLinks";
 import { NotificationProvider } from "../context/NotificationContext";
 import { useAuth } from "../context/AuthContext";
 import { getMCProfile } from "../api/medicalCenter";
 import PendingApproval from "../pages/mc/PendingApproval";
-
-const MC_LINKS = [
-  { label: "Overview", to: "/mc/dashboard" },
-  { label: "Upload", to: "/mc/upload" },
-  { label: "Reports", to: "/mc/reports" },
-  { label: "Doctors", to: "/mc/doctors" },
-];
+import "../styles/dash.css";
 
 const BADGES = { hospital: "for hospitals", clinic: "for clinics", lab: "for diagnostic labs" };
 
-// Medical center shell (Template A top bar). Routes and the auth guard in App.jsx are unchanged.
+// Medical center shell (top bar with icons, .dash look). Routes and the auth guard in App.jsx are unchanged.
 // The center's profile is shared with pages through the outlet context; labs take no
 // doctors, so they get no Doctors tab. Until an admin approves the center (after checking
 // its licence), it sees its approval status instead of the center pages.
@@ -41,14 +36,14 @@ function MCLayout() {
 
   return (
     <NotificationProvider>
-      <div className="min-h-screen bg-canvas font-sans text-ink">
+      <div className="dash min-h-screen bg-canvas font-sans text-ink">
         <a
           href="#main"
-          className="sr-only rounded-full bg-deep px-4 py-2 text-sm font-semibold text-deep-on focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
+          className="sr-only rounded-md bg-deep px-4 py-2 text-sm font-semibold text-deep-on focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
         >
           Skip to content
         </a>
-        <TopNav
+        <DashTopNav
           links={links}
           homePath="/mc/dashboard"
           notificationsPath="/mc/notifications"
