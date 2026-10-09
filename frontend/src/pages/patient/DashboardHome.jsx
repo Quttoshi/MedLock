@@ -6,6 +6,7 @@ import api from "../../api/axios";
 import StatusPill from "../../components/ui/StatusPill";
 import IdentityCard from "../../components/IdentityCard";
 import EmergencyAlerts from "../../components/EmergencyAlerts";
+import HealthGlance from "../../components/results/HealthGlance";
 import {
   activeAccess,
   doctorLabel,
@@ -107,6 +108,8 @@ function DashboardHome() {
             </Link>
           </div>
         )}
+
+        <HealthGlance token={token} />
 
         <h1 id="story-heading" className="display text-[28px] leading-[1.15] text-ink sm:text-[32px]">
           {firstName ? `${firstName}'s health ` : "Your health "}

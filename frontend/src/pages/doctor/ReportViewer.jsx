@@ -15,6 +15,9 @@ import ImagingStudyView from "../../components/ImagingStudyView";
 import { imagingDownloadName } from "../../utils/imaging";
 import IntegrityCheck from "../../components/IntegrityCheck";
 import ReportThreads from "../../components/ReportThreads";
+import ReportResults from "../../components/results/ReportResults";
+import { getPatientReportResults } from "../../api/results";
+import { getActiveEmergencies } from "../../api/emergency";
 import { parseServerDate } from "../../utils/dates";
 
 function ReportViewer() {
@@ -26,11 +29,17 @@ function ReportViewer() {
   const [downloading, setDownloading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [previewType, setPreviewType] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
   const [error, setError] = useState("");
   // The Questions card's response; undefined until it loads. A doctor keeps reading their
   // own thread after their access to the report ends.
   const [threadInfo, setThreadInfo] = useState(undefined);
+  // Under emergency access the doctor can read results but not confirm or correct them.
+  const [inEmergency, setInEmergency] = useState(false);
+
+  const fetchResults = useCallback(
+    () => getPatientReportResults(token, patientId, reportId),
+    [token, patientId, reportId]
+  );
 
   // Stable references: ImagingStudyView reloads whenever these change.
   const fetchImagingStudy = useCallback(
@@ -55,15 +64,20 @@ function ReportViewer() {
       })
       .catch(() => setReport(null))
       .finally(() => setLoading(false));
+    getActiveEmergencies(token)
+      .then((res) => setInEmergency(res.data.some((a) => a.patient.id === patientId)))
+      .catch(() => setInEmergency(false));
   }, [token, patientId, reportId]);
 
   // ── Load preview ─────────────────────────────────────
   useEffect(() => {
     // Imaging studies show series previews instead; downloading the whole study here would be wasteful.
-    if (!report || report.report_type === "imaging") return;
-    setPreviewLoading(true);
+    if (!report || report.report_type === "imaging") return undefined;
+    let alive = true;
+    let objectUrl = null;
     downloadReport(token, patientId, reportId)
       .then((res) => {
+        if (!alive) return;
         const filename = report.original_filename || "";
         let mimeType = "application/octet-stream";
         let type = "unknown";
@@ -81,21 +95,25 @@ function ReportViewer() {
           type = "image";
         }
         const blob = new Blob([res.data], { type: mimeType });
-        const url = window.URL.createObjectURL(blob);
-        setPreviewUrl(url);
+        objectUrl = window.URL.createObjectURL(blob);
+        setPreviewUrl(objectUrl);
         setPreviewType(type);
       })
       .catch(() => {
+        if (!alive) return;
         setError("Could not load preview. You can still download the file.");
         setPreviewType("unknown");
-      })
-      .finally(() => setPreviewLoading(false));
+      });
 
-    // Cleanup blob URL on unmount
+    // Free the blob URL when leaving the page
     return () => {
-      if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+      alive = false;
+      if (objectUrl) window.URL.revokeObjectURL(objectUrl);
     };
-  }, [report]);
+  }, [report, token, patientId, reportId]);
+
+  // Loading until the preview (or its failure) arrives
+  const previewLoading = !!report && report.report_type !== "imaging" && previewType === null;
 
   // ── Download ─────────────────────────────────────────
   const handleDownload = async () => {
@@ -173,7 +191,7 @@ function ReportViewer() {
   return (
     <div className="mx-auto max-w-5xl space-y-5">
 
-      <Link to={`/doctor/patients/${patientId}/reports`} className="link inline-flex items-center gap-2 text-sm no-underline hover:underline">
+      <Link to={`/doctor/patients/${patientId}/reports?tab=reports`} className="link inline-flex items-center gap-2 text-sm no-underline hover:underline">
         <ArrowLeft aria-hidden="true" size={16} />
         Back to records
       </Link>
@@ -216,6 +234,12 @@ function ReportViewer() {
         </p>
         <IntegrityCheck verify={() => verifyReport(token, patientId, reportId)} />
       </section>
+
+      {/* Values read from the report. A doctor with access the patient granted can
+          confirm or correct them; emergency access is read-only. */}
+      {report.report_type !== "imaging" && (
+        <ReportResults token={token} load={fetchResults} canConfirm={!inEmergency} />
+      )}
 
       {report.report_type === "imaging" ? (
         <section className="card card-pad">

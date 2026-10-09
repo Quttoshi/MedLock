@@ -2,6 +2,7 @@ import io
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import cv2
 import docx2txt
@@ -16,11 +17,12 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.ocr_result import OcrResult
 from app.models.medical_report import MedicalReport
+from app.services import lab_catalog
 
 pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
 _poppler_path = settings.POPPLER_PATH or None
 logger = logging.getLogger(__name__)
-PARSER_VERSION = "medical-ocr-v3"
+PARSER_VERSION = "medical-ocr-v4"
 
 # A digital PDF page with at least this many non-space characters has a usable text layer,
 # so re-running OCR on it would not beat the embedded text.
@@ -256,6 +258,18 @@ KNOWN_TEST_TERMS = sorted(
     reverse=True,
 )
 
+# Lines are also read for every name in the lab-test catalog, so any test MedLock charts
+# (HbA1c, TLC, fasting glucose, vitamin D, ...) is picked up. Kept separate from
+# KNOWN_TEST_TERMS, whose substring check would let short catalog names like "na" match anything.
+_LINE_TERMS = sorted(
+    set(KNOWN_TEST_TERMS) | {
+        alias for test in lab_catalog.TESTS.values() for alias in test.aliases
+        if len(alias) > 1 and "(" not in alias
+    },
+    key=len,
+    reverse=True,
+)
+
 STATUS_WORDS = {
     "normal", "high", "low", "borderline", "positive", "negative",
     "reactive", "non-reactive", "abnormal", "critical",
@@ -365,6 +379,16 @@ def _canonical_test_key(test_name: str) -> str:
     name = _clean_test_name(test_name).lower()
     name = _normalize_common_ocr_tokens(name)
     compact = re.sub(r"\s+", " ", name).strip()
+    key = _substring_test_key(compact)
+    # The substring checks must not turn a test the catalog knows into another one
+    # ("alkaline phosphatase" contains "ph", which is not the same test).
+    named = lab_catalog.match_test(compact)
+    if named and lab_catalog.match_test(key) is not named:
+        return compact
+    return key
+
+
+def _substring_test_key(compact: str) -> str:
     if compact in TEST_ALIASES:
         return TEST_ALIASES[compact]
     for alias, canonical in sorted(TEST_ALIASES.items(), key=lambda item: len(item[0]), reverse=True):
@@ -469,7 +493,10 @@ def _extract_unit_from_tail(tail: str) -> str:
         flags=re.IGNORECASE,
     )
     match = re.search(
-        r"(?P<unit>cells/cumm|mill/[ce]mm|/cumm|mg/dl|gm/dl|g/dl|mmol/l|mmo\s*/?\s*l?|u/l|mmhg|vol%|fl|pg|pe|%)",
+        # Longer units first where one contains another (mIU/L before U/L, pg/mL before pg).
+        r"(?P<unit>x?\s*10\s*\^?\s*\d+\s*/\s*[uµ]?l|lac/cumm|lakh/cumm|cells/cumm|mill/[ce]mm|/cumm|"
+        r"mmol/mol|mg/dl|gm/dl|g/dl|mg/l|ng/ml|pg/ml|[uµ]g/dl|mcg/dl|[uµ]mol/l|mmol/l|mmo\s*/?\s*l?|"
+        r"m?iu/l|[uµ]iu/ml|u/l|mm/hr|mmhg|vol%|fl|pg|pe|%)",
         tail_without_status,
         re.IGNORECASE,
     )
@@ -928,11 +955,17 @@ def _parse_structured_from_text(text: str) -> list[dict]:
     return results
 
 
+_UNIT_CHARS = {"µ": "u", "μ": "u", "×": "x", "¹²": "^12", "⁹": "^9", "³": "^3", "⁶": "^6"}
+
+
 def _normalize_ocr_line(line: str) -> str:
     line = line.replace("|", " ")
     line = line.replace("*", "")
     line = line.replace("↓", " low ")
     line = line.replace("↑", " high ")
+    # Keep units readable before other non-ASCII characters are dropped (µmol/L, x10³/µL).
+    for char, plain in _UNIT_CHARS.items():
+        line = line.replace(char, plain)
     line = re.sub(r"[^\x00-\x7F]+", " ", line)
     line = re.sub(r"\s+", " ", line)
     line = re.sub(r"^[+4]\s+(?=[A-Za-z])", "", line)
@@ -985,7 +1018,7 @@ def _parse_result_line(line: str) -> dict | None:
 def _parse_known_test_line(line: str) -> dict | None:
     line_for_match = _normalize_common_ocr_tokens(line)
     searchable = _normalize_common_ocr_tokens(_clean_test_name(line_for_match))
-    for term in KNOWN_TEST_TERMS:
+    for term in _LINE_TERMS:
         if term not in searchable:
             continue
         if len(term) <= 3 and not re.match(rf"^{re.escape(term)}\b", searchable):
@@ -1054,8 +1087,38 @@ def _extract_from_docx(file_bytes: bytes) -> tuple[str, list[dict]]:
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-def run_ocr(report: MedicalReport, file_bytes: bytes, db: Session) -> OcrResult:
-    ext = report.original_filename.rsplit(".", 1)[-1].lower()
+def run_ocr(report: MedicalReport, file_bytes: bytes, db: Session, existing: OcrResult | None = None) -> OcrResult:
+    """Read the file and save what was found. Pass the report's existing OcrResult to
+    re-read it with the current parser (it is updated in place)."""
+    text, structured_data, engine, status, error_message = extract(file_bytes, report.original_filename)
+
+    ocr_result = existing or OcrResult(report_id=report.id)
+    ocr_result.extracted_text = text
+    ocr_result.structured_data = structured_data
+    ocr_result.abnormal_values = _detect_abnormal(structured_data)
+    ocr_result.status = status
+    ocr_result.error_message = error_message
+    ocr_result.parser_version = PARSER_VERSION
+    ocr_result.ocr_engine = engine
+    ocr_result.raw_text_length = len(text or "")
+    ocr_result.structured_count = len(structured_data)
+    if existing:
+        ocr_result.processed_at = datetime.utcnow()
+    db.add(ocr_result)
+    db.commit()
+    db.refresh(ocr_result)
+
+    # Clean, normalised results for tables and trend charts (never fails the upload).
+    from app.services.lab_results_service import ingest_safely
+    ingest_safely(report, ocr_result, db)
+
+    return ocr_result
+
+
+def extract(file_bytes: bytes, filename: str) -> tuple[str, list[dict], str | None, str, str | None]:
+    """Read a report file: (text, structured values, engine, status, error message).
+    Used for uploads and by the accuracy evaluation, so both read files the same way."""
+    ext = filename.rsplit(".", 1)[-1].lower()
     text = ""
     structured_data = []
     engine = None
@@ -1098,26 +1161,8 @@ def run_ocr(report: MedicalReport, file_bytes: bytes, db: Session) -> OcrResult:
             status = "failed"
             error_message = "No text could be extracted from the report."
     except Exception as exc:
-        logger.exception("OCR failed for report %s", report.id)
+        logger.exception("OCR failed for %s", filename)
         status = "failed"
         error_message = str(exc)
 
-    abnormal_values = _detect_abnormal(structured_data)
-
-    ocr_result = OcrResult(
-        report_id=report.id,
-        extracted_text=text,
-        structured_data=structured_data,
-        abnormal_values=abnormal_values,
-        status=status,
-        error_message=error_message,
-        parser_version=PARSER_VERSION,
-        ocr_engine=engine,
-        raw_text_length=len(text or ""),
-        structured_count=len(structured_data),
-    )
-    db.add(ocr_result)
-    db.commit()
-    db.refresh(ocr_result)
-
-    return ocr_result
+    return text, structured_data, engine, status, error_message

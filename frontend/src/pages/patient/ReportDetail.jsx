@@ -6,6 +6,8 @@ import api from "../../api/axios";
 import IntegrityCheck from "../../components/IntegrityCheck";
 import ImagingStudyView from "../../components/ImagingStudyView";
 import ReportThreads from "../../components/ReportThreads";
+import ReportResults from "../../components/results/ReportResults";
+import { getMyReportResults } from "../../api/results";
 import { imagingDownloadName } from "../../utils/imaging";
 import StatusPill from "../../components/ui/StatusPill";
 import { sourceLabel } from "../../adapters/patientStory";
@@ -53,6 +55,8 @@ function ReportDetail() {
     [id, token]
   );
 
+  const fetchResults = useCallback(() => getMyReportResults(token, id), [id, token]);
+
   // ── Fetch Report + Blockchain ────────────────────────
   useEffect(() => {
     const headers = { Authorization: `Bearer ${token}` };
@@ -69,7 +73,9 @@ function ReportDetail() {
               await api.post(`/reports/${id}/blockchain/confirm`, {}, { headers });
               const refreshed = await api.get(`/reports/${id}/blockchain`, { headers });
               logs = refreshed.data;
-            } catch {}
+            } catch {
+              // Still pending; it shows as such until the next visit.
+            }
           }
           setBlockchainLogs(logs);
         } catch {
@@ -174,6 +180,9 @@ function ReportDetail() {
           />
         </section>
       )}
+
+      {/* Values read from a lab report, with range bars; the patient can check them. */}
+      {report.report_type !== "imaging" && <ReportResults token={token} load={fetchResults} canConfirm />}
 
       {/* Questions: private threads with the doctors who have access. Medical-center
           uploads can be discussed once the patient approves them. */}

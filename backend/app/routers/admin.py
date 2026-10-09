@@ -328,6 +328,7 @@ AUDIT_CATEGORIES = {
     "reports": (
         "report_upload", "mc_report_upload", "imaging_upload", "mc_imaging_upload",
         "report_approved", "report_rejected", "integrity_verified",
+        "lab_result_confirmed", "lab_result_corrected",
     ),
     "access": ("access_request_submitted", "access_approved", "access_denied", "access_revoked", "access_shared"),
     "doctors": (
