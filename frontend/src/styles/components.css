@@ -116,3 +116,23 @@
     @apply font-semibold text-brand underline underline-offset-2 hover:text-brand-strong;
   }
 }
+
+/* Trend charts (Recharts). Its SVG takes colors as attributes, so the tokens are
+   applied here with CSS, which wins over attributes and follows light and dark. */
+.trend-chart .recharts-line-curve {
+  stroke: rgb(var(--c-ink-soft));
+}
+.trend-chart .recharts-cartesian-grid line {
+  stroke: rgb(var(--c-line));
+}
+.trend-chart .recharts-cartesian-axis-line {
+  stroke: rgb(var(--c-line));
+}
+.trend-chart .recharts-cartesian-axis-tick-value {
+  fill: rgb(var(--c-muted));
+  font-size: 12px;
+}
+.trend-chart .recharts-surface:focus,
+.trend-chart .recharts-wrapper:focus {
+  outline: none;
+}

@@ -14,6 +14,8 @@ import ReportDetail from "./pages/patient/ReportDetail";
 import UploadReport from "./pages/patient/UploadReport";
 import AccessRequests from "./pages/patient/AccessRequests";
 import Notifications from "./pages/patient/Notifications";
+import HealthTrends from "./pages/patient/HealthTrends";
+import TestDetail from "./pages/patient/TestDetail";
 
 // Admin
 import AdminLayout from "./layouts/AdminLayout";
@@ -109,6 +111,8 @@ function App() {
         <Route path="dashboard" element={<DashboardHome />} />
         <Route path="reports" element={<MyReports />} />
         <Route path="reports/:id" element={<ReportDetail />} />
+        <Route path="health" element={<HealthTrends />} />
+        <Route path="health/:code" element={<TestDetail />} />
         <Route path="upload" element={<UploadReport />} />
         <Route path="access-requests" element={<AccessRequests />} />
         <Route path="notifications" element={<Notifications />} />

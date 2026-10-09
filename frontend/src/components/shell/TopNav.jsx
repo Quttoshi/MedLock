@@ -9,6 +9,7 @@ import ThemeToggle from "../../theme/ThemeToggle";
 const PATIENT_LINKS = [
   { label: "Story", to: "/patient/dashboard" },
   { label: "Records", to: "/patient/reports" },
+  { label: "Trends", to: "/patient/health" },
   { label: "Upload", to: "/patient/upload" },
   { label: "Sharing", to: "/patient/access-requests" },
 ];

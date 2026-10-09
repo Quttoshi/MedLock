@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, String, Boolean, Date, DateTime, ForeignKey, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -21,6 +21,11 @@ class MedicalReport(Base):
     file_hash_sha256 = Column(String, nullable=False)
     upload_source = Column(SAEnum("patient", "medical_center", name="upload_source_type"), nullable=False)
     is_approved = Column(Boolean, default=True, nullable=False)
+    # Read from the report's text: lab_report or other (only lab reports produce results),
+    # the date the sample was collected, and the lab that produced it.
+    document_kind = Column(String, nullable=True)
+    collected_on = Column(Date, nullable=True)
+    lab_name = Column(String, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
@@ -34,6 +39,10 @@ class MedicalReport(Base):
     )
     blockchain_logs = relationship(
         "BlockchainLog", back_populates="medical_report",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+    lab_results = relationship(
+        "LabResult", back_populates="report",
         cascade="all, delete-orphan", passive_deletes=True,
     )
     threads = relationship(

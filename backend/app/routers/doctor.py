@@ -131,6 +131,9 @@ def get_patient_reports(
                 "file_hash_sha256": report.file_hash_sha256,
                 "upload_source": report.upload_source,
                 "uploaded_at": report.uploaded_at,
+                "document_kind": report.document_kind,
+                "collected_on": report.collected_on,
+                "lab_name": report.lab_name,
             })
 
     return accessible

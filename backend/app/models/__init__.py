@@ -16,3 +16,4 @@ from app.models.imaging import ImagingStudy, ImagingSeries
 from app.models.doctor_verification_request import DoctorVerificationRequest
 from app.models.report_thread import ReportThread, ReportThreadMessage
 from app.models.emergency_access import EmergencyAccess, EmergencyAccessView
+from app.models.lab_result import LabResult
