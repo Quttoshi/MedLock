@@ -3,6 +3,7 @@ import { AlertTriangle, Calculator, FlaskConical, Info } from "lucide-react";
 import { getPatientOverview } from "../../api/results";
 import ResultStatus, { UncheckedPill } from "./ResultStatus";
 import ChangeChip from "./ChangeChip";
+import RangeBar from "./RangeBar";
 import { formatDay, formatValue } from "../../utils/results";
 
 /**
@@ -117,6 +118,25 @@ export default function DoctorOverview({ token, patientId, onOpenTest }) {
                     </span>
                     <ResultStatus label={t.status_label} flag={t.latest.flag} band={t.band} />
                     {!t.latest.trusted && <UncheckedPill />}
+                    {/* Where the value sits, at a glance. Only drawn when the
+                        report gave a range, otherwise the bar would mean nothing. */}
+                    {(t.latest.ref_low != null || t.latest.ref_high != null || t.bands?.length > 0) && (
+                      <span className="w-full">
+                        <RangeBar
+                          compact
+                          name={t.name}
+                          value={t.latest.value}
+                          flag={t.latest.flag}
+                          low={t.latest.ref_low}
+                          high={t.latest.ref_high}
+                          unit={t.unit}
+                          decimals={t.decimals ?? 1}
+                          bands={t.bands}
+                          critical={t.critical}
+                          action={t.action}
+                        />
+                      </span>
+                    )}
                     <span className="w-full text-xs text-muted">
                       {formatDay(t.latest.date)}
                       {t.change && (

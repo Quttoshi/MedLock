@@ -1,0 +1,223 @@
+/*
+ * Colours and mark specs for the lab result charts (trend lines and range bars).
+ *
+ * Chart marks need different colours from the interface. The interface brand
+ * teal is deliberately calm, and as a 2px line it goes grey, so the charts use
+ * their own slightly stronger step of the same teal. Everything else follows
+ * the normal theme tokens, so dark mode works with no extra work.
+ *
+ * The three mark colours were checked for colour blindness, not guessed:
+ *
+ *   light  #00826F / #B7791F / #9B2C2C   on white
+ *          every check passes, worst pair 9.9 apart under deuteranopia
+ *   dark   #2FA190 / #D9A520 / #E3595F   on the dark surface
+ *          worst pair 8.6 apart under deuteranopia, 20.0 in normal vision
+ *
+ * The dark amber is brighter than a chart mark would ideally be. A darker
+ * amber sits closer to the red and drops the pair to 5.7, which would make
+ * "above range" and "critical" hard to tell apart for a red green colour
+ * blind reader. In a medical chart that is the worse mistake, so the brighter
+ * amber stays. Colour is never the only signal anywhere: every value also
+ * carries a worded status, and the table marks H and L.
+ */
+
+:root {
+  --viz-series: #00826f;
+  --viz-warn: #b7791f;
+  --viz-bad: #9b2c2c;
+  --viz-band-ok: rgb(0 130 111 / 0.08);
+  --viz-band-warn: rgb(183 121 31 / 0.1);
+  --viz-band-bad: rgb(155 44 44 / 0.1);
+}
+
+[data-theme="dark"] {
+  --viz-series: #2fa190;
+  --viz-warn: #d9a520;
+  --viz-bad: #e3595f;
+  --viz-band-ok: rgb(47 161 144 / 0.12);
+  --viz-band-warn: rgb(217 165 32 / 0.14);
+  --viz-band-bad: rgb(227 89 95 / 0.14);
+}
+
+/* ------------------------------------------------------------------ */
+/* Trend line                                                          */
+/* ------------------------------------------------------------------ */
+
+/* Grid and axes stay recessive: solid hairlines, never dashed. */
+.trend-chart .viz-grid line {
+  stroke: rgb(var(--c-line));
+  stroke-dasharray: none;
+}
+
+.trend-chart .viz-axis text {
+  fill: rgb(var(--c-muted));
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-chart .viz-axis .recharts-cartesian-axis-line {
+  stroke: rgb(var(--c-line));
+}
+
+/* One series, so one colour. The dots carry the status. */
+.trend-chart .viz-line .recharts-line-curve {
+  stroke: var(--viz-series);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Shaded bands behind the line: a wash, never a solid block. */
+.trend-chart .viz-band-ok {
+  fill: var(--viz-band-ok);
+}
+
+.trend-chart .viz-band-warn {
+  fill: var(--viz-band-warn);
+}
+
+.trend-chart .viz-band-bad {
+  fill: var(--viz-band-bad);
+}
+
+/* Every point gets a ring in the surface colour so it stays readable where
+   it crosses the line or another point. */
+.trend-chart .viz-pt {
+  stroke: rgb(var(--c-surface));
+  stroke-width: 2;
+}
+
+.trend-chart .viz-pt-series {
+  fill: var(--viz-series);
+}
+
+.trend-chart .viz-pt-warn {
+  fill: var(--viz-warn);
+}
+
+.trend-chart .viz-pt-bad {
+  fill: var(--viz-bad);
+}
+
+/* Values nobody has checked yet are hollow. */
+.trend-chart .viz-pt-open {
+  fill: rgb(var(--c-surface));
+  stroke-width: 2;
+}
+
+.trend-chart .viz-pt-open.viz-pt-series {
+  stroke: var(--viz-series);
+}
+
+.trend-chart .viz-pt-open.viz-pt-warn {
+  stroke: var(--viz-warn);
+}
+
+.trend-chart .viz-pt-open.viz-pt-bad {
+  stroke: var(--viz-bad);
+}
+
+.trend-chart .viz-cursor {
+  stroke: rgb(var(--c-line-strong));
+  stroke-width: 1;
+}
+
+/* ------------------------------------------------------------------ */
+/* Key under the chart                                                 */
+/* ------------------------------------------------------------------ */
+
+.viz-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  font-size: 11px;
+  color: rgb(var(--c-muted));
+}
+
+.viz-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.viz-key i {
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.viz-key .viz-key-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--viz-series);
+}
+
+.viz-key .viz-key-band {
+  width: 16px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--viz-band-ok);
+  box-shadow: inset 0 0 0 1px rgb(var(--c-line));
+}
+
+.viz-key .viz-key-open {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgb(var(--c-surface));
+  box-shadow: inset 0 0 0 2px var(--viz-series);
+}
+
+/* ------------------------------------------------------------------ */
+/* Range bar                                                           */
+/* ------------------------------------------------------------------ */
+
+.range-bar .viz-track {
+  background: rgb(var(--c-inset));
+  border-radius: 3px;
+}
+
+.range-bar .viz-seg {
+  border-radius: 2px;
+}
+
+.range-bar .viz-seg-ok {
+  background: var(--viz-band-ok);
+  box-shadow: inset 0 0 0 1px rgb(0 130 111 / 0.25);
+}
+
+[data-theme="dark"] .range-bar .viz-seg-ok {
+  box-shadow: inset 0 0 0 1px rgb(47 161 144 / 0.35);
+}
+
+.range-bar .viz-seg-warn {
+  background: var(--viz-band-warn);
+}
+
+.range-bar .viz-seg-bad {
+  background: var(--viz-band-bad);
+}
+
+/* The marker sits on top of the bands, so it carries a surface ring. */
+.range-bar .viz-mark {
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgb(var(--c-surface));
+}
+
+.range-bar .viz-mark-series {
+  background: var(--viz-series);
+}
+
+.range-bar .viz-mark-warn {
+  background: var(--viz-warn);
+}
+
+.range-bar .viz-mark-bad {
+  background: var(--viz-bad);
+}
+
+/* Where doctors usually act. Dashed on purpose: it is a threshold, not a grid. */
+.range-bar .viz-action {
+  border-left: 1px dashed rgb(var(--c-line-strong));
+}

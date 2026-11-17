@@ -1,7 +1,9 @@
 import { flagTone, flagWord, formatRange, formatValue, scaleFor } from "../../utils/results";
+import "../../styles/charts.css";
 
-const FILL = { ok: "bg-ok-subtle", warn: "bg-warn-subtle", bad: "bg-bad-subtle" };
-const MARK = { ok: "bg-ok", warn: "bg-warn", bad: "bg-bad" };
+const SEG = { ok: "viz-seg-ok", warn: "viz-seg-warn", bad: "viz-seg-bad" };
+// In range sits in the chart colour; only a value outside the range goes amber or red.
+const MARK = { ok: "viz-mark-series", warn: "viz-mark-warn", bad: "viz-mark-bad" };
 
 // Bands include their lower bound: an HbA1c of 6.5 is in the diabetes range.
 function bandRange(b, decimals) {
@@ -31,10 +33,10 @@ function segmentsFor({ min, max, low, high, bands, critical }) {
 }
 
 /**
- * A horizontal bar showing where a value sits: coloured blocks for below, in and above
- * the range (or the test's guideline bands), and a marker for the value.
- * Colour is never the only signal: the marker carries the number and the bar has a
- * text description for screen readers.
+ * A horizontal bar showing where a value sits: a quiet track with the range (or
+ * the test's guideline bands) washed in, and a marker for the value.
+ * Colour is never the only signal: the marker carries the number and the bar has
+ * a text description for screen readers.
  */
 export default function RangeBar({
   name, value, flag, low, high, unit, decimals = 1, bands = [], critical = {}, action = {}, compact = false,
@@ -52,35 +54,35 @@ export default function RangeBar({
   }${low != null || high != null ? `; range ${formatRange(low, high, decimals)}` : ""}`;
 
   return (
-    <div role="img" aria-label={description} className={compact ? "py-1" : "pt-6 pb-5"}>
-      <div className={`relative w-full ${compact ? "h-2" : "h-3"}`}>
-        <div className="absolute inset-0 flex overflow-hidden rounded-full">
-          {segs.map((s, i) => (
-            <div
-              key={i}
-              title={s.label}
-              className={`absolute top-0 h-full ${FILL[s.tone] ?? FILL.ok}`}
-              style={{ left: `${pos(s.from)}%`, width: `${pos(s.to) - pos(s.from)}%` }}
-            />
-          ))}
-        </div>
+    <div role="img" aria-label={description} className={`range-bar ${compact ? "py-1" : "pt-6 pb-5"}`}>
+      <div className={`viz-track relative w-full ${compact ? "h-2" : "h-2.5"}`}>
+        {segs.map((s, i) => (
+          <div
+            key={i}
+            title={s.label}
+            className={`viz-seg absolute top-0 h-full ${SEG[s.tone] ?? SEG.ok}`}
+            // The 2px taken off the width is the gap that separates touching
+            // bands, so no border is needed to tell them apart.
+            style={{ left: `${pos(s.from)}%`, width: `calc(${pos(s.to) - pos(s.from)}% - 2px)` }}
+          />
+        ))}
         {actionLines.map((x) => (
           <div
             key={x}
             title="Doctors usually act beyond this line"
-            className="absolute -top-1 h-[calc(100%+8px)] border-l border-dashed border-ink-soft"
+            className="viz-action absolute -top-1 h-[calc(100%+8px)]"
             style={{ left: `${pos(x)}%` }}
           />
         ))}
         <div
-          className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-surface ${MARK[tone]} ${
-            compact ? "h-3 w-3" : "h-4 w-4"
+          className={`viz-mark absolute top-1/2 -translate-x-1/2 -translate-y-1/2 ${MARK[tone]} ${
+            compact ? "h-2.5 w-2.5" : "h-3.5 w-3.5"
           }`}
           style={{ left: `${marker}%` }}
         />
         {!compact && (
           <span
-            className="absolute -top-6 -translate-x-1/2 whitespace-nowrap text-xs font-bold text-ink"
+            className="absolute -top-6 -translate-x-1/2 whitespace-nowrap text-xs font-bold tabular-nums text-ink"
             style={{ left: `${marker}%` }}
           >
             {formatValue(value, decimals)}
@@ -88,7 +90,7 @@ export default function RangeBar({
         )}
       </div>
       {!compact && (
-        <div className="relative mt-1 h-4 text-[11px] text-muted">
+        <div className="relative mt-1.5 h-4 text-[11px] tabular-nums text-muted">
           {ticks.map((x) => (
             <span key={x} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${pos(x)}%` }}>
               {formatValue(x, decimals)}
